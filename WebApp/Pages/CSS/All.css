@@ -1,0 +1,59 @@
+* {
+    font-family: 'Montserrat', sans-serif;
+    font-family: 'Open Sans', sans-serif;
+}
+
+
+/* Make a modern login form (#LoginForm) */
+
+#LoginForm {
+    width: 30%;
+    margin: 0 auto;
+}
+
+#LoginForm h1{
+    text-align: center;
+    color: #4d4d4d;
+    font-size: 24px;
+    padding: 20px 0 20px 0;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+#LoginForm p{
+    font-size: 14px;
+    color: #4d4d4d;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e5e5e5;
+    padding-bottom: 8px;
+}
+
+#LoginForm label{
+    font-weight: bold;
+    color: #4d4d4d;
+    margin-bottom: 8px;
+}
+
+#LoginForm input[type="text"]{
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+#LoginContextActions{
+    text-align: left;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+#LoginForm input[type="submit"]{
+    width: 100%;
+    padding: 10px;
+    background-color: #4d4d4d;
+    border: 0;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 3px;
+}

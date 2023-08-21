@@ -1,0 +1,17 @@
+Creating Admin Dashboard:
+    This dashboard must:
+        Show current number of users
+        Provide links to other interfaces
+        show some graphs on usage
+
+
+Create Manage Users Dashboard:
+    This Dashboard Must:
+        Show all users
+        Allow admin to delete users
+        Allow admin to change user groups
+        allow admin to change permissions
+        allow admin to add new users
+        allow admin to lock user accounts
+TODO:
+Create table for user groups

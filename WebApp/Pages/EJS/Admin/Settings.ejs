@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings | Interconnected</title>
+    <%- include('Partials/Head.html') %>
+  </head>
+  <body>
+    <%- include('Partials/Navigation.html') %>
+    <main>
+      <h1>Account Settings</h1>
+      <img
+        id="ProfilePicture"
+        src=""
+        alt="Profile Image"
+        onclick="document.getElementById('ChangeProfileImage').showModal()"
+      />
+      <dialog id="ChangeProfileImage">
+        <form
+          action="/api/Me/ProfileImage"
+          method="POST"
+          enctype="multipart/form-data"
+        >
+          <input type="file" name="ProfileImage" id="ProfileImage" />
+          <input type="submit" value="Upload" />
+        </form>
+      </dialog>
+      <p id="Name" onclick="PrepNameChange()"></p>
+      <hr />
+      <h3>Theme</h3>
+      <hr />
+      <h3>Security Settings</h3>
+      <hr />
+      <h3>Danger Zone</h3>
+    </main>
+    <script>
+      fetch("/api/Me", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          document.getElementById("ProfilePicture").src =
+            "/ProfileImages/" + data.ProfileImage;
+          document.getElementById("Name").innerHTML =
+            data.Firstname + " " + data.Surname;
+        });
+      function PrepNameChange() {
+        fetch("/api/Me")
+          .then((res) => res.json())
+          .then((data) => {
+            document.getElementById("Name").innerHTML =
+              '<input type="text" placeholder="Firstname" id="FirstName" value="' +
+              data.Firstname +
+              '"><input type="text" placeholder="Surname" id="Surname" value="' +
+              data.Surname +
+              '"><button onclick="ChangeName()">Save</button>';
+
+            document.getElementById("Name").onclick = null;
+
+            document.getElementById("FirstName").focus();
+          });
+      }
+      function ChangeName() {
+        fetch("/api/Me", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            Firstname: document.getElementById("FirstName").value,
+            Surname: document.getElementById("Surname").value,
+          }),
+        }).then((res) => {
+          window.location.reload();
+        });
+      }
+    </script>
+  </body>
+</html>

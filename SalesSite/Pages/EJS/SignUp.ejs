@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up</title>
+  </head>
+  <body>
+    <!-- Make sure to send the     -->
+    <form id="SignUp" action="/api/SignUp" method="post">
+      <!-- Plan Selector -->
+      <select name="plan_id">
+        <% for (i = 0; i < Plans.length; i++){ %>
+        <option value="<%= Plans[i].UniqueID %>">
+          <%= Plans[i].Name %> Plan
+        </option>
+
+        <% } %>
+        <input type="text" placeholder="Email Address" name="Email" />
+        <input type="text" placeholder="Password" name="Password" />
+        <button type="submit">Create Account</button>
+      </select>
+    </form>
+    <script>
+      // Get the URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+
+      // Get the plan ID
+      const plan_id = urlParams.get("plan_id");
+
+      // Set the plan ID in the form
+      document.querySelector("select[name='plan_id']").value = plan_id;
+
+      document
+        .getElementById("SignUp")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const form = event.target;
+          const data = {
+            plan_id: form.plan_id.value,
+            Email: form.Email.value,
+            Password: form.Password.value,
+          };
+          console.log(data);
+          const xhr = new XMLHttpRequest();
+          xhr.open(form.method, form.action);
+          xhr.setRequestHeader("Content-Type", "application/json");
+          xhr.onload = function () {
+            console.log(xhr.status, xhr.statusText, xhr.responseText);
+          };
+          xhr.send(JSON.stringify(data));
+          // get the response
+          xhr.onload = function () {
+            const response = JSON.parse(xhr.responseText);
+            console.log(response.Status);
+            if (response.Status == "Success") {
+              window.location.href = response.RedirectURL;
+            } else {
+              alert(response.Error);
+            }
+          };
+        });
+    </script>
+  </body>
+</html>

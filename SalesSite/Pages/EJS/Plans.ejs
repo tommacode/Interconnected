@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plans | Interconnected</title>
+  </head>
+  <body>
+    <h1>Plans</h1>
+    <div id="PlansWrapper">
+      <% if (Plans.length == 0) { %>
+      <div class="Plan">
+        <p>No plans found</p>
+      </div>
+      <% } else {%> <% for (i = 0; i < Plans.length; i++){ %>
+      <div class="Plan">
+        <p><%= Plans[i].Name %> Plan</p>
+        <p>Price: £<%= Plans[i].Price %>/month</p>
+        <p>Maximum Users: <%= Plans[i].MaxUsers %></p>
+        <p>Maximum Groups: <%= Plans[i].MaxGroups %></p>
+        <a href="/SignUp?plan_id=<%= Plans[i].UniqueID %>"> Get Started </a>
+      </div>
+      <% } %> <% } %>
+    </div>
+  </body>
+</html>

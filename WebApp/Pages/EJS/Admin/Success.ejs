@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Success!</title>
+  </head>
+  <body>
+    <div id="Loading">
+      <h1 id="Title">Proccessing Your Payment.</h1>
+      <p id="Subheading">Loading</p>
+    </div>
+    <script>
+      //Every 1 second check the status of the paid on the subscription
+      setInterval(() => {
+        fetch("/api/subscription/status/<%- SessionID %>")
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.Paid === 1) {
+              //Delete the Loading div
+              document.getElementById("Title").innerHTML =
+                "Payment Successful!";
+              document.getElementById("Subheading").innerHTML =
+                "Welecome to a world of seamless communication.";
+              // Wait 3 seconds then redirect to the home page
+              setTimeout(() => {
+                window.location.href = "/";
+              }, 5000);
+            }
+          });
+      }, 1000);
+    </script>
+  </body>
+</html>

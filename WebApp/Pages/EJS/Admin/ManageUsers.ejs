@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Users | Interconnected</title>
+    <%- include('Partials/Head.html') %>
+  </head>
+  <body>
+    <%- include('Partials/Navigation.html') %>
+    <main>
+      <h3>Create user</h3>
+      <div>
+        <form
+          id="CreateAccount"
+          action="/api/Admin/CreateAccount"
+          method="post"
+        >
+          <input type="text" name="Name" id="Name" placeholder="Name" />
+          <br />
+          <input type="text" name="Email" id="Email" placeholder="Email" />
+          <br />
+          <input
+            type="text"
+            name="Password"
+            id="Password"
+            placeholder="Password"
+          />
+          <br />
+          <input type="submit" />
+        </form>
+      </div>
+      <br />
+      <br />
+      <div>
+        <form
+          action="/api/Admin/CreateMultipleUsers"
+          method="post"
+          enctype="multipart/form-data"
+        >
+          <input type="file" name="Users" />
+          <input type="submit" />
+        </form>
+      </div>
+      <h3>Users <span id="UserCount"></span></h3>
+      <div id="UsersWrapper">
+        <!-- TODO: Add spining loading icon -->
+        <table id="UserTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="UsersTableBody"></tbody>
+        </table>
+      </div>
+      <dialog id="NewUserDialog">
+        <h3>Security Message</h3>
+        <p>
+          This is the last time you can see this sensitive information about
+          this account
+        </p>
+        <div class="blurry" onclick="ShowDetails()">
+          <p>Name: <span id="NewUserName"></span></p>
+          <p>Email: <span id="NewUserEmail"></span></p>
+          <p>Password: <span id="NewUserPassword"></span></p>
+        </div>
+        <button
+          id="CreateUserButton"
+          onclick="document.getElementById('CreateAccount').submit();document.getElementById('NewUserDialog').close()"
+        >
+          Create User
+        </button>
+        <button class="cancelButton">Cancel</button>
+      </dialog>
+      <script>
+        let Page = 0;
+        function LoadUsers(Page) {
+          console.log("Loading users");
+          fetch("/api/Admin/Accounts/")
+            .then((response) => response.json())
+            .then((data) => {
+              console.log(data);
+              let tableBody = document.getElementById("UsersTableBody");
+              document.getElementById(
+                "UserCount"
+              ).innerText = `(${data.length})`;
+              data.forEach((user) => {
+                let row = document.createElement("tr");
+                let name = document.createElement("td");
+                name.innerText = user.Name;
+                let email = document.createElement("td");
+                email.innerText = user.Email;
+                let actions = document.createElement("td");
+                let deleteButton = document.createElement("button");
+                deleteButton.innerText = "Lock Account";
+
+                deleteButton.onclick = () => {
+                  fetch("/api/Admin/LockAccount", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ Email: user.Email }),
+                  })
+                    .then((response) => response.json())
+                    .then((data) => {
+                      console.log(data);
+                      if (data.Success) {
+                        row.remove();
+                      }
+                    });
+                };
+                actions.appendChild(deleteButton);
+                row.appendChild(name);
+                row.appendChild(email);
+                row.appendChild(actions);
+                tableBody.appendChild(row);
+                console.log(user);
+              });
+            });
+        }
+        LoadUsers();
+        // Stop the #CreateAccount form from submitting
+        document.getElementById("CreateAccount").onsubmit = (e) => {
+          e.preventDefault();
+          let name = document.getElementById("Name").value;
+          let email = document.getElementById("Email").value;
+          let password = document.getElementById("Password").value;
+          document.getElementById("NewUserDialog").showModal();
+          document.getElementById("NewUserName").innerText = name;
+          document.getElementById("NewUserEmail").innerText = email;
+          document.getElementById("NewUserPassword").innerText = password;
+        };
+        function ShowDetails() {
+          let details = document.getElementsByClassName("blurry");
+          for (let i = 0; i < details.length; i++) {
+            details[i].classList.remove("blurry");
+          }
+        }
+      </script>
+    </main>
+  </body>
+</html>

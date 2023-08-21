@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Home | Interconnected</title>
+    <%- include('Partials/Head.html') %>
+  </head>
+  <body>
+    <%- include('Partials/Navigation.html') %>
+    <main>
+      <!-- Could make this show something if the admin hasn't added a name -->
+      <p>Welcome, <%= Admin.Firstname %></p>
+      <h2>Statistics</h2>
+      <% if (Plan.ID == 0) { %>
+      <p>Users: <%= UserCount %>/∞</p>
+      <p>Groups: ∞</p>
+      <% } else {%>
+      <p>Users: <%= UserCount %>/<%= Plan.MaxUsers %></p>
+      <p>Groups: <%= GroupCount %>/<%= Plan.MaxGroups %></p>
+      <% } %>
+
+      <br />
+      <h2>Plan</h2>
+      <p>Plan: <%= Plan.Name %></p>
+    </main>
+  </body>
+</html>

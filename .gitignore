@@ -1,0 +1,4 @@
+/SalesSite/node_modules/*
+/SalesSite/.env
+/WebApp/node_modules/*
+/WebApp/.env

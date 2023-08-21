@@ -1,0 +1,160 @@
+* {
+    font-family: 'Montserrat', sans-serif;
+    font-family: 'Open Sans', sans-serif;
+}
+
+.NavIcons {
+    width: 30px;
+    height: 30px;
+    color: #000;
+    padding-right: 10px;
+}
+
+/* Make the nav into a verticle navigation with the interconnected h3 at the top */
+
+nav {
+    width: 250px;
+    height: 100%;
+    background-color: #fff;
+    position: fixed;
+    top: 0;
+    left: 0;
+    overflow-x: hidden;
+    padding-top: 20px;
+    border-top-right-radius: 10%;
+    border-bottom-right-radius: 10%;
+    box-shadow: 0px 0px 15px 0px rgba(0,0,0,0.1);
+}
+
+nav > h3 {
+    text-align: center;
+    font-size: 1.5em;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #000;
+    margin-bottom: 10px;
+}
+
+nav > ul {
+    list-style: none;
+}
+
+nav > ul > li {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 10px;
+    width: 60%;
+    border-bottom: 1px solid #000;
+}
+
+nav > ul > li > a {
+    
+    text-decoration: none;
+    color: #000;
+    font-size: 1.25em;
+    height: 1%;
+}
+
+#User{
+    float: right;
+    margin-right: 1%;
+    line-height: 10px;
+
+    border-radius: 5%;
+    box-shadow: 0px 0px 15px 0px rgba(0,0,0,0.25);
+    padding: 10px 50px;
+}
+
+main {
+    margin-left: 250px;
+    padding: 20px;
+}
+
+/* ManageUsers.ejs */
+
+#UserTable {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #000;
+    text-align: center;
+}
+
+#UserTable > thead > tr > th {
+    border-bottom: 1px solid #000;
+    padding: 10px;
+}
+
+#UserTable > tbody > tr > td {
+    padding: 10px;
+    border-bottom: 1px solid #000;
+}
+
+#UserTable > tbody > tr > td > a {
+    text-decoration: none;
+    color: #000;
+}
+
+#NewUserDialog {
+    border: none;
+    box-shadow: 0px 0px 15px 0px rgba(0,0,0,0.25);
+    border-radius: 2%;
+}
+
+#NewUserDialog > #CreateUserButton {
+    border: 1px solid #000;
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 2%;
+}
+
+.cancelButton {
+    background-color: #e92f2f;
+    color: #fff;
+    border: 1px solid #000;
+    padding: 10px;
+    border-radius: 2%;
+    float: right;
+}
+
+.hidden {
+    display: none;
+}
+
+.invisible {
+    opacity: 0;
+}
+
+.blurry {
+    filter: blur(5px);
+    user-select: none;
+}
+
+/* ManageGroups.ejs */
+
+/* Create a sleek apple like design */
+
+.Group {
+    width: 80%;
+    margin: 0 auto;
+    border-radius: 1%;
+    box-shadow: 0px 0px 15px 0px rgba(0,0,0,0.1);
+    padding:  25px 50px;
+    margin-bottom: 50px;
+    margin-top: 50px;
+}
+
+.DeleteGroup {
+    float: right;
+    margin-top: 10px;
+    cursor: pointer;
+    text-align: right;
+    margin-right: 1%;
+    border: none;
+    background-color: inherit;
+}
+
+.GroupInfo {
+    float: right;
+    background-color: inherit;
+    border: none;
+    cursor: pointer;
+}

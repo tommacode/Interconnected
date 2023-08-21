@@ -1,0 +1,7 @@
+Get user to fill out sign up form with their details we send a cookie
+Send the user to the stripe payment screen with the plan as a query in the url
+We get a request to create a payment intent with the cookie attached
+we match that to their account
+User fills out their card details and submits
+On the sucess screen we show verifying payment
+once complete send them to the dashboard on the other 
