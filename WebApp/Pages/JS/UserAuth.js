@@ -10,7 +10,6 @@ fetch("/api/Me", {
     if (data) {
       document.getElementById("AccountName").innerHTML =
         data.Firstname + " " + data.Surname;
-      document.getElementById("Plan").innerHTML = data.Plan + " Plan";
     }
   })
   .catch(function (error) {

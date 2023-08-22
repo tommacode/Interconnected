@@ -11,6 +11,8 @@ Create Table AdminAccounts(
     ProfileImage varchar(255) NOT NULL DEFAULT 'default.png'
 );
 
+-- INSERT INTO AdminAccounts (Firstname, Surname, Email, Password, Plan, BillingDate, Paid, Setup) VALUES ('Thomas','Blake', 'tom@tomhasawebsite.com', 'Password', 0, '2021-01-01 00:00:00', 1, 1);
+
 -- NOTE: BillingDate is when the account was last charged
 -- If the account isn't paid then redirect to payment page
 -- OPtionally add a name and company column to the admin accounts table
@@ -24,14 +26,15 @@ Create Table AdminAccountSessions(
 
 Create Table UserAccounts(
     ID int NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    Name varchar(255) NOT NULL,
+    Firstname varchar(255) NOT NULL,
+    Surname varchar(255) NOT NULL,
     Email varchar(255) NOT NULL,
     Password varchar(255) NOT NULL,
     ParentID int NOT NULL,
     CreatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    LastLogin datetime
-    Groups varchar(255)
-)
+    LastLogin datetime,
+    `Groups` JSON
+);
 
 Create Table UserAccountSessions(
     ID int NOT NULL PRIMARY KEY AUTO_INCREMENT,
@@ -51,7 +54,6 @@ Create Table Plans(
     UniqueID varchar(8) NOT NULL,
     StripePriceID varchar(255) NOT NULL
 );
--- INSERT INTO AdminAccounts (Username, Password, Plan) VALUES ('admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 0);
 
 Create Table CheckoutSessionAccountMap(
     ID int NOT NULL PRIMARY KEY AUTO_INCREMENT,

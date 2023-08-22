@@ -20,13 +20,10 @@ nav {
     top: 0;
     left: 0;
     overflow-x: hidden;
-    padding-top: 20px;
-    border-top-right-radius: 10%;
-    border-bottom-right-radius: 10%;
-    box-shadow: 0px 0px 15px 0px rgba(0,0,0,0.1);
+    box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.1);
 }
 
-nav > h3 {
+nav>h3 {
     text-align: center;
     font-size: 1.5em;
     padding-bottom: 10px;
@@ -34,11 +31,11 @@ nav > h3 {
     margin-bottom: 10px;
 }
 
-nav > ul {
+nav>ul {
     list-style: none;
 }
 
-nav > ul > li {
+nav>ul>li {
     padding-top: 10px;
     padding-bottom: 10px;
     padding-left: 10px;
@@ -46,21 +43,21 @@ nav > ul > li {
     border-bottom: 1px solid #000;
 }
 
-nav > ul > li > a {
-    
+nav>ul>li>a {
+
     text-decoration: none;
     color: #000;
     font-size: 1.25em;
     height: 1%;
 }
 
-#User{
+#User {
     float: right;
     margin-right: 1%;
     line-height: 10px;
 
-    border-radius: 5%;
-    box-shadow: 0px 0px 15px 0px rgba(0,0,0,0.25);
+    border-radius: 1%;
+    box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.25);
     padding: 10px 50px;
 }
 
@@ -71,49 +68,99 @@ main {
 
 /* ManageUsers.ejs */
 
+.Columns {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#CreateAccount input[type="text"],
+input[type="password"],
+input[type="email"] {
+    border: none;
+    border-bottom: 1px solid #1d1d1f;
+    background-color: inherit;
+    padding: 10px;
+    margin-bottom: 10px;
+    font-size: 1.25em;
+}
+
+#CreateAccount input[type="submit"] {
+    border: none;
+    background-color: #1d1d1f;
+    color: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+#CreateMultipleAccounts {
+    float: right;
+}
+
+#CreateMultipleAccounts input[type="submit"] {
+    border: none;
+    background-color: #1d1d1f;
+    color: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
 #UserTable {
     width: 100%;
     border-collapse: collapse;
-    border: 1px solid #000;
     text-align: center;
 }
 
-#UserTable > thead > tr > th {
+#UserTable>thead>tr>th {
     border-bottom: 1px solid #000;
     padding: 10px;
 }
 
-#UserTable > tbody > tr > td {
+#UserTable>tbody>tr>td {
     padding: 10px;
     border-bottom: 1px solid #000;
 }
 
-#UserTable > tbody > tr > td > a {
+#UserTable>tbody>tr>td>a {
     text-decoration: none;
     color: #000;
 }
 
 #NewUserDialog {
     border: none;
-    box-shadow: 0px 0px 15px 0px rgba(0,0,0,0.25);
+    box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.25);
     border-radius: 2%;
 }
 
-#NewUserDialog > #CreateUserButton {
+#NewUserDialog>#CreateUserButton {
     border: 1px solid #000;
     background-color: #fff;
     padding: 10px;
     border-radius: 2%;
 }
 
-.cancelButton {
-    background-color: #e92f2f;
-    color: #fff;
-    border: 1px solid #000;
-    padding: 10px;
-    border-radius: 2%;
-    float: right;
+.LockAccountButton {
+    background-color: #1d1d1f;
 }
+
+.DeleteAccountButton {
+    background-color: #ff3a30;
+}
+
+.ActionButtonGeneralStyling {
+    color: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    margin: 10px;
+}
+
+
+
+
 
 .hidden {
     display: none;
@@ -132,12 +179,31 @@ main {
 
 /* Create a sleek apple like design */
 
+
+#CreateGroup input[type="text"] {
+    border: none;
+    border-bottom: 1px solid #1d1d1f;
+    background-color: inherit;
+    padding: 10px;
+    margin-bottom: 10px;
+    font-size: 1.25em;
+}
+
+#CreateGroup input[type="submit"] {
+    border: none;
+    background-color: #1d1d1f;
+    color: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
 .Group {
     width: 80%;
     margin: 0 auto;
     border-radius: 1%;
-    box-shadow: 0px 0px 15px 0px rgba(0,0,0,0.1);
-    padding:  25px 50px;
+    box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.1);
+    padding: 25px 50px;
     margin-bottom: 50px;
     margin-top: 50px;
 }
@@ -156,5 +222,23 @@ main {
     float: right;
     background-color: inherit;
     border: none;
+    cursor: pointer;
+}
+
+.AddUser select {
+    border: none;
+    border-bottom: 1px solid #1d1d1f;
+    background-color: inherit;
+    padding: 10px;
+    margin-bottom: 10px;
+    font-size: 1em;
+}
+
+.AddUser input[type="submit"] {
+    border: none;
+    background-color: #1d1d1f;
+    color: #fff;
+    padding: 10px;
+    border-radius: 8px;
     cursor: pointer;
 }

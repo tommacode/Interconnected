@@ -10,38 +10,60 @@
   <body>
     <%- include('Partials/Navigation.html') %>
     <main>
-      <h3>Create user</h3>
-      <div>
-        <form
-          id="CreateAccount"
-          action="/api/Admin/CreateAccount"
-          method="post"
-        >
-          <input type="text" name="Name" id="Name" placeholder="Name" />
+      <div class="Columns">
+        <div class="Column">
+          <h3>Create user</h3>
+          <div>
+            <form
+              id="CreateAccount"
+              action="/api/Admin/CreateAccount"
+              method="post"
+            >
+              <input
+                type="text"
+                name="Firstname"
+                id="Firstname"
+                placeholder="Firstname"
+              />
+              <input
+                type="text"
+                name="Surname"
+                id="Surname"
+                placeholder="Surname"
+              />
+              <br />
+              <input type="email" name="Email" id="Email" placeholder="Email" />
+              <br />
+              <input
+                type="password"
+                name="Password"
+                id="Password"
+                placeholder="Password"
+              />
+              <br />
+              <input type="submit" />
+            </form>
+          </div>
+        </div>
+        <div class="Column">
+          <h3>Create multiple users</h3>
           <br />
-          <input type="text" name="Email" id="Email" placeholder="Email" />
-          <br />
-          <input
-            type="text"
-            name="Password"
-            id="Password"
-            placeholder="Password"
-          />
-          <br />
-          <input type="submit" />
-        </form>
-      </div>
-      <br />
-      <br />
-      <div>
-        <form
-          action="/api/Admin/CreateMultipleUsers"
-          method="post"
-          enctype="multipart/form-data"
-        >
-          <input type="file" name="Users" />
-          <input type="submit" />
-        </form>
+          <div>
+            <form
+              id="CreateMultipleAccounts"
+              action="/api/Admin/CreateMultipleUsers"
+              method="post"
+              enctype="multipart/form-data"
+              accept=".csv"
+            >
+              <label for="Users">Upload CSV file</label>
+              <input type="file" name="Users" />
+              <br />
+              <br />
+              <input type="submit" />
+            </form>
+          </div>
+        </div>
       </div>
       <h3>Users <span id="UserCount"></span></h3>
       <div id="UsersWrapper">
@@ -49,7 +71,8 @@
         <table id="UserTable">
           <thead>
             <tr>
-              <th>Name</th>
+              <th>Firstname</th>
+              <th>Surname</th>
               <th>Email</th>
               <th>Actions</th>
             </tr>
@@ -90,32 +113,42 @@
               ).innerText = `(${data.length})`;
               data.forEach((user) => {
                 let row = document.createElement("tr");
-                let name = document.createElement("td");
-                name.innerText = user.Name;
+                let firstname = document.createElement("td");
+                firstname.innerText = user.Firstname;
+                let surname = document.createElement("td");
+                surname.innerText = user.Surname;
                 let email = document.createElement("td");
                 email.innerText = user.Email;
                 let actions = document.createElement("td");
-                let deleteButton = document.createElement("button");
-                deleteButton.innerText = "Lock Account";
+                let lockAccountButton = document.createElement("button");
+                lockAccountButton.innerText = "Lock Account";
+                lockAccountButton.classList.add("LockAccountButton");
+                lockAccountButton.classList.add("ActionButtonGeneralStyling");
 
-                deleteButton.onclick = () => {
-                  fetch("/api/Admin/LockAccount", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ Email: user.Email }),
-                  })
-                    .then((response) => response.json())
-                    .then((data) => {
-                      console.log(data);
-                      if (data.Success) {
-                        row.remove();
-                      }
-                    });
-                };
-                actions.appendChild(deleteButton);
-                row.appendChild(name);
+                let deleteAccountButton = document.createElement("button");
+                deleteAccountButton.innerText = "Delete Account";
+                deleteAccountButton.classList.add("DeleteAccountButton");
+                deleteAccountButton.classList.add("ActionButtonGeneralStyling");
+                // lockAccountButton.onclick = () => {
+                //   fetch("/api/Admin/LockAccount", {
+                //     method: "POST",
+                //     headers: {
+                //       "Content-Type": "application/json",
+                //     },
+                //     body: JSON.stringify({ Email: user.Email }),
+                //   })
+                //     .then((response) => response.json())
+                //     .then((data) => {
+                //       console.log(data);
+                //       if (data.Success) {
+                //         row.remove();
+                //       }
+                //     });
+                // };
+                actions.appendChild(lockAccountButton);
+                actions.appendChild(deleteAccountButton);
+                row.appendChild(firstname);
+                row.appendChild(surname);
                 row.appendChild(email);
                 row.appendChild(actions);
                 tableBody.appendChild(row);
@@ -127,7 +160,10 @@
         // Stop the #CreateAccount form from submitting
         document.getElementById("CreateAccount").onsubmit = (e) => {
           e.preventDefault();
-          let name = document.getElementById("Name").value;
+          let name =
+            document.getElementById("Firstname").value +
+            " " +
+            document.getElementById("Surname").value;
           let email = document.getElementById("Email").value;
           let password = document.getElementById("Password").value;
           document.getElementById("NewUserDialog").showModal();
