@@ -80,7 +80,7 @@
           <tbody id="UsersTableBody"></tbody>
         </table>
       </div>
-      <dialog id="NewUserDialog">
+      <dialog id="NewUserDialog" class="Dialog">
         <h3>Security Message</h3>
         <p>
           This is the last time you can see this sensitive information about
@@ -94,10 +94,17 @@
         <button
           id="CreateUserButton"
           onclick="document.getElementById('CreateAccount').submit();document.getElementById('NewUserDialog').close()"
+          class="BlackButton"
         >
           Create User
         </button>
-        <button class="cancelButton">Cancel</button>
+        <button
+          class="RedButton"
+          style="float: right"
+          onclick="document.getElementById('NewUserDialog').close()"
+        >
+          Cancel
+        </button>
       </dialog>
       <script>
         let Page = 0;

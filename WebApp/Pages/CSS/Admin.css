@@ -56,7 +56,7 @@ nav>ul>li>a {
     margin-right: 1%;
     line-height: 10px;
 
-    border-radius: 1%;
+    border-radius: 8px;
     box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.25);
     padding: 10px 50px;
 }
@@ -129,17 +129,10 @@ input[type="email"] {
     color: #000;
 }
 
-#NewUserDialog {
+.Dialog {
     border: none;
     box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.25);
-    border-radius: 2%;
-}
-
-#NewUserDialog>#CreateUserButton {
-    border: 1px solid #000;
-    background-color: #fff;
-    padding: 10px;
-    border-radius: 2%;
+    border-radius: 10px;
 }
 
 .LockAccountButton {
@@ -157,9 +150,6 @@ input[type="email"] {
     border: none;
     margin: 10px;
 }
-
-
-
 
 
 .hidden {
@@ -201,7 +191,7 @@ input[type="email"] {
 .Group {
     width: 80%;
     margin: 0 auto;
-    border-radius: 1%;
+    border-radius: 8px;
     box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.1);
     padding: 25px 50px;
     margin-bottom: 50px;
@@ -237,6 +227,24 @@ input[type="email"] {
 .AddUser input[type="submit"] {
     border: none;
     background-color: #1d1d1f;
+    color: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.BlackButton {
+    border: none;
+    background-color: #1d1d1f;
+    color: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.RedButton {
+    border: none;
+    background-color: #ff3a30;
     color: #fff;
     padding: 10px;
     border-radius: 8px;

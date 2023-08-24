@@ -228,7 +228,7 @@ app.get("/api/Admin/Accounts", async (req, res) => {
   );
   ParentID = ParentID[0][0].AdminID;
   const [Accounts] = await pool.query(
-    "SELECT Firstname,Surname,Email FROM UserAccounts WHERE ParentID = ?",
+    "SELECT Firstname,Surname,Email FROM UserAccounts WHERE ParentID = ? ORDER BY Surname ASC",
     [ParentID]
   );
   res.send(Accounts);
@@ -259,10 +259,11 @@ app.get("/api/Admin/Groups", async (req, res) => {
     }
     for (let j = 0; j < Groups[i].Members.length; j++) {
       const [MemberData] = await pool.query(
-        "SELECT Name FROM UserAccounts WHERE ID = ?",
+        "SELECT Firstname,Surname FROM UserAccounts WHERE ID = ?",
         [Groups[i].Members[j]]
       );
-      Groups[i].Members[j] = MemberData[0].Name;
+      Groups[i].Members[j] =
+        MemberData[0].Firstname + " " + MemberData[0].Surname;
     }
     if (
       Groups[i].Admins == null ||
@@ -381,25 +382,26 @@ app.post("/api/Admin/CreateMultipleUsers", async (req, res) => {
   //Create the users
   for (let i = 0; i < CSV.length; i++) {
     CurrentLine = CSV[i].split(",");
-    if (CurrentLine.length != 3) {
+    if (CurrentLine.length != 4) {
       console.log(
         "Invalid CSV format. Please refer to the example CSV file or contact support"
       );
       continue;
     }
-    const Name = CurrentLine[0];
-    const Email = CurrentLine[1];
+    const Firstname = CurrentLine[0];
+    const Surname = CurrentLine[1];
+    const Email = CurrentLine[2];
     const Password = crypto
       .createHash("sha256")
-      .update(CurrentLine[2])
+      .update(CurrentLine[3])
       .digest("hex");
     const ParentID = await pool.query(
       "SELECT AdminID FROM AdminAccountSessions WHERE SessionID = ?",
       [req.cookies.session_id]
     );
     await pool.query(
-      "INSERT INTO UserAccounts (Name, Email, Password, ParentID) VALUES (?, ?, ?, ?)",
-      [Name, Email, Password, ParentID[0][0].AdminID]
+      "INSERT INTO UserAccounts (Firstname, Surname, Email, Password, ParentID) VALUES (?, ?, ?, ?, ?)",
+      [Firstname, Surname, Email, Password, ParentID[0][0].AdminID]
     );
   }
   res.redirect("/");
@@ -431,7 +433,7 @@ app.post("/api/Admin/AddUserToGroup", async (req, res) => {
   }
   const GroupID = req.body.GroupID;
   const [UserID] = await pool.query(
-    "SELECT ID FROM UserAccounts WHERE Name = ?",
+    "SELECT ID FROM UserAccounts WHERE CONCAT(Firstname, ' ', Surname) = ?",
     [req.body.Name]
   );
 
@@ -480,6 +482,25 @@ app.post("/api/Admin/AddUserToGroup", async (req, res) => {
   ]);
   res.redirect("/ManageGroups");
 });
+
+app.post("/api/Admin/DeleteGroup", async (req, res) => {
+  if ((await FindAccountType(req.cookies.session_id)) != "Admin") {
+    res.sendStatus(404);
+    return;
+  }
+  const GroupID = req.body.GroupID;
+  const ParentID = await pool.query(
+    "SELECT AdminID FROM AdminAccountSessions WHERE SessionID = ?",
+    [req.cookies.session_id]
+  );
+  console.log(req.body);
+  await pool.query("DELETE FROM `Groups` WHERE UniqueID = ? AND ParentID = ?", [
+    GroupID,
+    ParentID[0][0].AdminID,
+  ]);
+  res.redirect("/ManageGroups");
+});
+
 // ######
 // Admin Settings
 // ######
