@@ -4,10 +4,67 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>User Home</title>
+    <title>Groups | Interconnected</title>
     <%- include('Partials/Head.html') %>
   </head>
   <body>
     <%- include('Partials/Navigation.html') %>
+    <main>
+      <h3>Groups</h3>
+      <div class="GroupWrapper">
+        <!-- <div class="Group">
+          <div class="TextWrapper" style="float: right">
+            <p class="NotificationCount">6 New Messages</p>
+            <h3>Fortnite Club</h3>
+          </div>
+          <img src="/ProfileImages/default.png" alt="" />
+          <ul>
+            <li>8 Members</li>
+            <li>3 Admins</li>
+          </ul>
+        </div> -->
+      </div>
+    </main>
+    <script>
+      fetch("/api/User/Groups", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          for (i = 0; i < data.length; i++) {
+            var Group = document.createElement("a");
+            Group.href = "/Group/" + data[i].UniqueID;
+            Group.className = "Group";
+            var TextWrapper = document.createElement("div");
+            TextWrapper.className = "TextWrapper";
+            TextWrapper.style = "float: right";
+            var NotificationCount = document.createElement("p");
+            NotificationCount.className = "NotificationCount";
+            NotificationCount.innerHTML = "0 New Messages";
+            var GroupName = document.createElement("h3");
+            GroupName.innerHTML = data[i].Name;
+            var GroupImage = document.createElement("img");
+            GroupImage.src = "/ProfileImages/default.png";
+            var GroupInfo = document.createElement("ul");
+            var GroupMembers = document.createElement("li");
+            GroupMembers.innerHTML = data[i].Members.length + " Members";
+            var GroupAdmins = document.createElement("li");
+            GroupAdmins.innerHTML = data[i].Admins.length + " Admins";
+            GroupInfo.appendChild(GroupMembers);
+            GroupInfo.appendChild(GroupAdmins);
+            TextWrapper.appendChild(NotificationCount);
+            TextWrapper.appendChild(GroupName);
+            Group.appendChild(TextWrapper);
+            Group.appendChild(GroupImage);
+            Group.appendChild(GroupInfo);
+            document
+              .getElementsByClassName("GroupWrapper")[0]
+              .appendChild(Group);
+          }
+        });
+    </script>
   </body>
 </html>

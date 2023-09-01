@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title></title>
+    <%- include('Partials/Head.html') %>
+  </head>
+  <body>
+    <%- include('Partials/Navigation.html') %>
+    <div id="LeftMenuGroups">
+      <div id="CurrentGroup" class="ListGroup"><h3 id="GroupName"></h3></div>
+    </div>
+    <main>
+      <input id="MainInput" type="text" placeholder="Write a Message..." />
+      <button id="MainButton">Send</button>
+    </main>
+    <script>
+      const GroupID = window.location.pathname.split("/")[2];
+      fetch(`/api/User/Group/${GroupID}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          document.getElementById("GroupName").innerHTML = data.Name;
+        });
+      // Get messages here
+
+      // Load other groups here
+    </script>
+  </body>
+</html>

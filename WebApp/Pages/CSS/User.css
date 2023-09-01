@@ -1,6 +1,7 @@
 * {
     font-family: 'Montserrat', sans-serif;
     font-family: 'Open Sans', sans-serif;
+    padding: 0;
 }
 
 .NavIcons {
@@ -13,7 +14,7 @@
 /* Make the nav into a verticle navigation with the interconnected h3 at the top */
 
 nav {
-    width: 250px;
+    width: 50px;
     height: 100%;
     background-color: #fff;
     position: fixed;
@@ -33,22 +34,25 @@ nav>h3 {
 
 nav>ul {
     list-style: none;
+    padding: 0;
+    margin-top: 100px;
 }
 
 nav>ul>li {
-    padding-top: 10px;
-    padding-bottom: 10px;
+    padding-top: 25px;
+    padding-bottom: 25px;
     padding-left: 10px;
-    width: 60%;
-    border-bottom: 1px solid #000;
 }
 
-nav>ul>li>a {
+nav>ul>li:hover {
+    background-color: #f2f2f2;
+}
 
+
+nav>ul>li>a {
     text-decoration: none;
     color: #000;
     font-size: 1.25em;
-    height: 1%;
 }
 
 #User {
@@ -62,7 +66,7 @@ nav>ul>li>a {
 }
 
 main {
-    margin-left: 250px;
+    margin-left: 50px;
     padding: 20px;
 }
 
@@ -188,14 +192,79 @@ input[type="email"] {
     cursor: pointer;
 }
 
+.GroupWrapper {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+}
+
 .Group {
-    width: 80%;
-    margin: 0 auto;
+    width: 20%;
     border-radius: 8px;
     box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.1);
-    padding: 25px 50px;
     margin-bottom: 50px;
     margin-top: 50px;
+    padding-left: 20px;
+    text-decoration: none;
+    color: #000;
+}
+
+.Group>img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
+
+.Group h3 {
+    margin-right: 20%;
+}
+
+.NotificationCount {
+    border-radius: 25px;
+    background-color: #f2f2f2;
+    margin-left: 70px;
+    padding: 4px;
+}
+
+.CountRed {
+    background-color: #ff9999;
+}
+
+.CountAmber {
+    background-color: #ff9500;
+}
+
+.CountGreen {
+    background-color: #1d1d1f;
+}
+
+
+
+.TextWrapper {
+    width: 60%;
+    height: 100%;
+    margin-right: 10px;
+}
+
+
+/* Make the list space the objects evenly on a single line */
+
+.Group ul {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0;
+    border-top: #000 1px solid;
+    width: calc(100% - 20px);
+}
+
+.Group ul li {
+    list-style: none;
+    padding: 10px;
 }
 
 .DeleteGroup {
@@ -260,4 +329,53 @@ input[type="email"] {
     border-radius: 50%;
     margin: 0 auto;
     margin-bottom: 10px;
+}
+
+
+/* Group.ejs */
+
+
+#LeftMenuGroups {
+    top: 0;
+    width: 350px;
+    height: 100%;
+    box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    z-index: -1;
+    margin: 0;
+    padding-left: 40px;
+}
+
+
+#CurrentGroup {
+    background-color: #f2f2f2;
+}
+
+.ListGroup {
+    padding: 10px 0;
+    padding-left: 10px;
+}
+
+
+
+
+#MainInput {
+    margin-top: 45%;
+    margin-left: 30%;
+    width: 60%;
+    border-radius: 5px;
+    border: #000 1px solid;
+    padding: 10px;
+}
+
+#MainInput:focus {
+    outline: none;
+}
+
+#MainButton {
+    background-color: rgb(0, 128, 255);
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
 }

@@ -104,6 +104,10 @@ app.get("/", async (req, res) => {
   }
 });
 
+// ######
+// Admin Pages
+// ######
+
 app.get("/ManageUsers", async (req, res) => {
   const AccountType = await FindAccountType(req.cookies.session_id);
   if (AccountType == "None" || AccountType == "User") {
@@ -136,6 +140,19 @@ app.get("/Settings", async (req, res) => {
   if (AccountType == "Admin") {
     res.render(__dirname + "/Pages/EJS/Admin/Settings.ejs");
   }
+});
+
+// ######
+// User Pages
+// ######
+
+app.get("/Group/:GroupID", async (req, res) => {
+  const AccountType = await FindAccountType(req.cookies.session_id);
+  if (AccountType == "None" || AccountType == "Admin") {
+    res.redirect("/Login");
+    return;
+  }
+  res.render(__dirname + "/Pages/EJS/User/Group.ejs");
 });
 
 app.get("/Login", async (req, res) => {
@@ -538,6 +555,127 @@ app.put("/api/Me", async (req, res) => {
     res.sendStatus(200);
     return;
   }
+});
+
+// ######
+// User APIs
+// ######
+
+app.get("/api/User/Groups", async (req, res) => {
+  if ((await FindAccountType(req.cookies.session_id)) != "User") {
+    res.sendStatus(404);
+    return;
+  }
+  let UserID = await pool.query(
+    "SELECT UserID FROM UserAccountSessions WHERE SessionID = ?",
+    [req.cookies.session_id]
+  );
+  UserID = UserID[0][0].UserID;
+  const [ParentID] = await pool.query(
+    "SELECT ParentID FROM UserAccounts WHERE ID = ?",
+    [UserID]
+  );
+  const [Groups] = await pool.query(
+    "SELECT Name,CreatedAt,Members,Admins,UniqueID FROM `Groups` WHERE ParentID = ?",
+    [ParentID[0].ParentID]
+  );
+  // Loop through the groups and check that the user is in them. If not remove them from the array
+  console.log(Groups);
+  for (let i = 0; i < Groups.length; i++) {
+    if (Groups[i].Members.indexOf(UserID) !== -1) {
+      continue;
+    } else {
+      Groups.splice(i, 1);
+      i--;
+    }
+  }
+
+  for (let i = 0; i < Groups.length; i++) {
+    if (
+      Groups[i].Members == null ||
+      Groups[i].Members == "" ||
+      Groups[i].Members == []
+    ) {
+      Groups[i].Members = [];
+    }
+    for (let j = 0; j < Groups[i].Members.length; j++) {
+      const [MemberData] = await pool.query(
+        "SELECT Firstname,Surname FROM UserAccounts WHERE ID = ?",
+        [Groups[i].Members[j]]
+      );
+      Groups[i].Members[j] =
+        MemberData[0].Firstname + " " + MemberData[0].Surname;
+    }
+    if (
+      Groups[i].Admins == null ||
+      Groups[i].Admins == "" ||
+      Groups[i].Admins == []
+    ) {
+      Groups[i].Admins = [];
+    }
+    for (let j = 0; j < Groups[i].Admins.length; j++) {
+      const [AdminData] = await pool.query(
+        "SELECT Name FROM UserAccounts WHERE ID = ?",
+        [Groups[i].Admins[j]]
+      );
+      Groups[i].Admins[j] = AdminData[0].Name;
+    }
+  }
+  res.send(Groups);
+});
+
+app.get("/api/User/Group/:GroupID", async (req, res) => {
+  if ((await FindAccountType(req.cookies.session_id)) != "User") {
+    res.sendStatus(404);
+    return;
+  }
+  let UserID = await pool.query(
+    "SELECT UserID FROM UserAccountSessions WHERE SessionID = ?",
+    [req.cookies.session_id]
+  );
+  UserID = UserID[0][0].UserID;
+  const [ParentID] = await pool.query(
+    "SELECT ParentID FROM UserAccounts WHERE ID = ?",
+    [UserID]
+  );
+  const [GroupData] = await pool.query(
+    "SELECT * FROM `Groups` WHERE UniqueID = ? AND ParentID = ?",
+    [req.params.GroupID, ParentID[0].ParentID]
+  );
+  if (GroupData.length == 0) {
+    res.send("Invalid Group ID");
+    return;
+  }
+  if (
+    GroupData[0].Members == null ||
+    GroupData[0].Members == "" ||
+    GroupData[0].Members == []
+  ) {
+    GroupData[0].Members = [];
+  }
+  for (let j = 0; j < GroupData[0].Members.length; j++) {
+    const [MemberData] = await pool.query(
+      "SELECT Firstname,Surname FROM UserAccounts WHERE ID = ?",
+      [GroupData[0].Members[j]]
+    );
+    GroupData[0].Members[j] =
+      MemberData[0].Firstname + " " + MemberData[0].Surname;
+  }
+  if (
+    GroupData[0].Admins == null ||
+    GroupData[0].Admins == "" ||
+    GroupData[0].Admins == []
+  ) {
+    GroupData[0].Admins = [];
+  }
+  for (let j = 0; j < GroupData[0].Admins.length; j++) {
+    const [AdminData] = await pool.query(
+      "SELECT Name FROM UserAccounts WHERE ID = ?",
+      [GroupData[0].Admins[j]]
+    );
+    GroupData[0].Admins[j] = AdminData[0].Name;
+  }
+  res.send(GroupData[0]);
 });
 
 //######

@@ -26,9 +26,11 @@
           <input type="submit" value="Upload" />
         </form>
       </dialog>
-      <p id="Name" onclick="PrepNameChange()"></p>
-      <hr />
-      <h3>Theme</h3>
+      <h3 id="Name" onclick="PrepNameChange()"></h3>
+
+      <p><b>Status: </b><span id="Status">🔴 Busy</span></p>
+      <p><b>Email: </b><span id="Email"></span></p>
+      <br />
       <hr />
       <h3>Security Settings</h3>
       <hr />
@@ -47,6 +49,7 @@
             "/ProfileImages/" + data.ProfileImage;
           document.getElementById("Name").innerHTML =
             data.Firstname + " " + data.Surname;
+          document.getElementById("Email").innerHTML = data.Email;
         });
       function PrepNameChange() {
         fetch("/api/Me")
