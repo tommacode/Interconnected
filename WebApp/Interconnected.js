@@ -34,6 +34,56 @@ const fileUpload = require("express-fileupload");
 const { join } = require("path");
 app.use(fileUpload());
 
+//Enable CorporateSpeakGenerator
+const CorporateSpeakGenerator = require("./CorporateSpeakGenerator/Words.js");
+
+// Websockets
+const ws = require("ws");
+
+const wss = new ws.Server({ port: 3001 });
+
+wss.on("connection", (ws) => {
+  ws.dead = true;
+  ws.Account = null;
+  ws.ListeningTo = null;
+  ws.on("message", async (message) => {
+    if (!ws.dead) {
+      return;
+    }
+    console.log(message.toString());
+    const Message = JSON.parse(message.toString());
+    // Find account and authenticate
+    const [AccountID] = await pool.query("SELECT UserID FROM UserAccountSessions WHERE SessionID = ?", [Message['session_id']])
+    if (AccountID.length == 0) {
+      ws.send(JSON.stringify({ error: "Invalid session ID" }));
+      ws.close();
+      return;
+    }
+    ws.Account = AccountID[0].UserID;
+    // Listen to the group
+    const [GroupInfo] = await pool.query("SELECT * FROM `Groups` WHERE UniqueID = ?", [Message['GroupID']])
+    if (GroupInfo.length == 0) {
+      ws.send(JSON.stringify({ error: "Invalid Group ID" }));
+      ws.close();
+      return;
+    }
+    console.log(GroupInfo[0].Members)
+    console.log(ws.Account)
+    if (GroupInfo[0].Members.indexOf(ws.Account) == -1) {
+      ws.send(JSON.stringify({ error: "You are not in this group" }));
+      ws.close();
+      return;
+    }
+    ws.ListeningTo = GroupInfo[0].ID;
+    ws.dead = false;
+  });
+});
+
+
+
+
+
+
 async function FindAccountType(Cookie) {
   //TODO: Check if the session has expired
   if (Cookie == undefined || Cookie == null || Cookie == "") {
@@ -154,6 +204,15 @@ app.get("/Group/:GroupID", async (req, res) => {
   }
   res.render(__dirname + "/Pages/EJS/User/Group.ejs");
 });
+
+app.get('/DirectMessages', async (req, res) => {
+  const AccountType = await FindAccountType(req.cookies.session_id);
+  if (AccountType == "None" || AccountType == "Admin") {
+    res.redirect("/Login");
+    return;
+  }
+  res.render(__dirname + "/Pages/EJS/User/DirectMessages.ejs");
+})
 
 app.get("/Login", async (req, res) => {
   if ((await FindAccountType(req.cookies.session_id)) != "None") {
@@ -676,6 +735,133 @@ app.get("/api/User/Group/:GroupID", async (req, res) => {
     GroupData[0].Admins[j] = AdminData[0].Name;
   }
   res.send(GroupData[0]);
+});
+
+app.get("/api/User/Group/Messages/:GroupID", async (req, res) => {
+  if ((await FindAccountType(req.cookies.session_id)) != "User") {
+    res.sendStatus(404);
+    return;
+  }
+  let UserID = await pool.query(
+    "SELECT UserID FROM UserAccountSessions WHERE SessionID = ?",
+    [req.cookies.session_id]
+  );
+  UserID = UserID[0][0].UserID;
+  const [ParentID] = await pool.query(
+    "SELECT ParentID FROM UserAccounts WHERE ID = ?",
+    [UserID]
+  );
+  const [GroupData] = await pool.query(
+    "SELECT * FROM `Groups` WHERE UniqueID = ? AND ParentID = ?",
+    [req.params.GroupID, ParentID[0].ParentID]
+  );
+  if (GroupData.length == 0) {
+    res.send("Invalid Group ID");
+    return;
+  }
+  if (
+    GroupData[0].Members == null ||
+    GroupData[0].Members == "" ||
+    GroupData[0].Members == []
+  ) {
+    GroupData[0].Members = [];
+  }
+  if (!GroupData[0].Members.includes(UserID)) {
+    res.send("You are not in this group");
+    return;
+  }
+  const [Messages] = await pool.query(
+    "SELECT SenderID,Message,CreatedAt,MessageType FROM GroupMessages WHERE GroupID = ? AND Deleted = 0 ORDER BY ID ASC LIMIT 50",
+    [GroupData[0].ID]
+  );
+  for (let i = 0; i < Messages.length; i++) {
+    const [SenderData] = await pool.query(
+      "SELECT Firstname,Surname FROM UserAccounts WHERE ID = ?",
+      [Messages[i].SenderID]
+    );
+    // Remove sender ID from the message object
+    delete Messages[i].SenderID;
+    Messages[i].Sender = SenderData[0].Firstname + " " + SenderData[0].Surname;
+    Messages[i].CreatedAt = Messages[i].CreatedAt.toLocaleString("en-GB", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    });
+  }
+  res.send(Messages);
+});
+
+app.get('/api/User/CorporateSpeak', async (req, res) => {
+  res.send({ Words: CorporateSpeakGenerator.buzzwords() });
+})
+
+app.post('/api/User/Group/SendMessage', async (req, res) => {
+  if ((await FindAccountType(req.cookies.session_id)) != "User") {
+    res.sendStatus(404);
+    return;
+  }
+  let UserID = await pool.query(
+    "SELECT UserID FROM UserAccountSessions WHERE SessionID = ?",
+    [req.cookies.session_id]
+  );
+  UserID = UserID[0][0].UserID;
+  const [ParentID] = await pool.query(
+    "SELECT ParentID FROM UserAccounts WHERE ID = ?",
+    [UserID]
+  );
+  const [GroupData] = await pool.query(
+    "SELECT * FROM `Groups` WHERE UniqueID = ? AND ParentID = ?",
+    [req.body.GroupID, ParentID[0].ParentID]
+  );
+  if (GroupData.length == 0) {
+    res.send("Invalid Group ID");
+    return;
+  }
+  if (
+    GroupData[0].Members == null ||
+    GroupData[0].Members == "" ||
+    GroupData[0].Members == []
+  ) {
+    GroupData[0].Members = [];
+  }
+  if (!GroupData[0].Members.includes(UserID)) {
+    res.send("You are not in this group");
+    return;
+  }
+  await pool.query("INSERT INTO GroupMessages (SenderID, GroupID, Message, MessageType) VALUES (?, ?, ?, ?)", [UserID, GroupData[0].ID, req.body.Message, 1])
+  res.send({ Success: true })
+  // Send it out to the websockets
+  let Message;
+  if (wss.clients.size != 0) {
+    // Render and object with the message and the username etc
+    const [SenderData] = await pool.query(
+      "SELECT Firstname,Surname FROM UserAccounts WHERE ID = ?",
+      [UserID]
+    );
+    const [MessageMetadata] = await pool.query(
+      "SELECT ID,CreatedAt FROM GroupMessages WHERE SenderID = ? AND GroupID = ? AND Message = ? AND MessageType = ?",
+      [UserID, GroupData[0].ID, req.body.Message, 1]
+    );
+    Message = {
+      Sender: SenderData[0].Firstname + " " + SenderData[0].Surname,
+      Message: req.body.Message,
+      CreatedAt: MessageMetadata[0].CreatedAt.toLocaleString("en-GB", {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+      }),
+      MessageType: 1
+    }
+  }
+  wss.clients.forEach((ws) => {
+    if (ws.ListeningTo == GroupData[0].ID) {
+      ws.send(JSON.stringify(Message));
+    }
+  });
 });
 
 //######

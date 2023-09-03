@@ -8,16 +8,16 @@
   </head>
   <body>
     <%- include('Partials/Navigation.html') %>
-    <div id="LeftMenuGroups">
-      <div id="CurrentGroup" class="ListGroup"><h3 id="GroupName"></h3></div>
-    </div>
+    <div id="LeftMenuGroups"></div>
     <main>
+      <div id="MessageWrapper"></div>
       <input id="MainInput" type="text" placeholder="Write a Message..." />
-      <button id="MainButton">Send</button>
+      <button id="MainButton" onclick="SendMessage()">Send</button>
     </main>
     <script>
       const GroupID = window.location.pathname.split("/")[2];
-      fetch(`/api/User/Group/${GroupID}`, {
+      // Get messages here
+      fetch(`/api/User/Group/Messages/${GroupID}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -25,11 +25,99 @@
       })
         .then((res) => res.json())
         .then((data) => {
-          document.getElementById("GroupName").innerHTML = data.Name;
+          console.log(data);
+          data.forEach((message) => {
+            const Message = document.createElement("div");
+            Message.classList.add("Message");
+            Message.innerHTML = `<p class="Time">${message.CreatedAt}</p><h3>${message.Sender}</h3><p>${message.Message}</p>`;
+            document.getElementById("MessageWrapper").appendChild(Message);
+          });
         });
-      // Get messages here
-
       // Load other groups here
+      fetch("/api/User/Groups", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          data.forEach((group) => {
+            const Group = document.createElement("div");
+            Group.classList.add("ListGroup");
+            if (group.UniqueID === GroupID) Group.id = "ActiveGroup";
+            Group.innerHTML = `<h3>${group.Name}</h3>`;
+            Group.addEventListener("click", () => {
+              window.location.href = `/Group/${group.UniqueID}`;
+            });
+            document.getElementById("LeftMenuGroups").appendChild(Group);
+          });
+        });
+      function SendMessage() {
+        let Body = {
+          GroupID: GroupID,
+          Message: document.getElementById("MainInput").value,
+        };
+        fetch("/api/User/Group/SendMessage", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(Body),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.Success) {
+              document.getElementById("MainInput").value = "";
+            }
+          });
+      }
+      fetch("/api/User/CorporateSpeak", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          document.getElementById("MainInput").placeholder = data.Words + "...";
+        });
+      document
+        .getElementById("MainInput")
+        .addEventListener("keyup", (event) => {
+          if (event.keyCode === 13) {
+            event.preventDefault();
+            SendMessage();
+          }
+        });
+
+      // Connect to socket
+      const socket = new WebSocket("ws://localhost:3001");
+      socket.onopen = () => {
+        socket.send(
+          JSON.stringify({
+            session_id: document.cookie.split("=")[1],
+            GroupID: GroupID,
+          })
+        );
+      };
+      socket.onmessage = (event) => {
+        data = JSON.parse(event.data);
+        const Message = document.createElement("div");
+        Message.classList.add("Message");
+        Message.innerHTML = `<p class="Time">${data.CreatedAt}</p><h3>${data.Sender}</h3><p>${data.Message}</p>`;
+        document.getElementById("MessageWrapper").appendChild(Message);
+        const div = document.getElementById("MessageWrapper");
+        div.scrollTo({ top: div.scrollHeight });
+      };
+      onload = () => {
+        const div = document.getElementById("MessageWrapper");
+        div.scrollTo({ top: div.scrollHeight });
+      };
+      setTimeout(() => {
+        const div = document.getElementById("MessageWrapper");
+        div.scrollTo({ top: div.scrollHeight });
+      }, 1000);
     </script>
   </body>
 </html>

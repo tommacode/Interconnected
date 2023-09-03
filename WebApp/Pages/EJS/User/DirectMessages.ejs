@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Direct Messages | Interconnected</title>
+    <%- include("Partials/Head.html") %>
+  </head>
+  <body>
+    <%- include("Partials/Navigation.html") %>
+    <div id="LeftMenuGroups">
+      <div>
+        <!-- Buttons to make a new chat etc -->
+        <button id="NewChatButton">New Chat</button>
+        <button id="NewGroupButton">New Group</button>
+      </div>
+    </div>
+    <main>
+      <div id="MessageWrapper"></div>
+      <input id="MainInput" type="text" placeholder="Write a Message..." />
+      <button id="MainButton" onclick="SendMessage()">Send</button>
+    </main>
+  </body>
+</html>
