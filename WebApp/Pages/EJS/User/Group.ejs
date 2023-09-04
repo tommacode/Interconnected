@@ -109,6 +109,20 @@
         document.getElementById("MessageWrapper").appendChild(Message);
         const div = document.getElementById("MessageWrapper");
         div.scrollTo({ top: div.scrollHeight });
+        if (SendNotifications) {
+          // Check that the sender is not the current user
+          if (data.Sender != document.getElementById("AccountName").innerHTML) {
+            new Notification(
+              data.Sender +
+                ` (${
+                  document.getElementById("ActiveGroup").children[0].innerHTML
+                })`,
+              {
+                body: data.Message,
+              }
+            );
+          }
+        }
       };
       onload = () => {
         const div = document.getElementById("MessageWrapper");
@@ -118,6 +132,13 @@
         const div = document.getElementById("MessageWrapper");
         div.scrollTo({ top: div.scrollHeight });
       }, 1000);
+      // Get notification permisison
+      let SendNotifications = false;
+      Notification.requestPermission().then((result) => {
+        if (result === "granted") {
+          SendNotifications = true;
+        }
+      });
     </script>
   </body>
 </html>

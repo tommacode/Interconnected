@@ -53,7 +53,10 @@ wss.on("connection", (ws) => {
     console.log(message.toString());
     const Message = JSON.parse(message.toString());
     // Find account and authenticate
-    const [AccountID] = await pool.query("SELECT UserID FROM UserAccountSessions WHERE SessionID = ?", [Message['session_id']])
+    const [AccountID] = await pool.query(
+      "SELECT UserID FROM UserAccountSessions WHERE SessionID = ?",
+      [Message["session_id"]]
+    );
     if (AccountID.length == 0) {
       ws.send(JSON.stringify({ error: "Invalid session ID" }));
       ws.close();
@@ -61,14 +64,17 @@ wss.on("connection", (ws) => {
     }
     ws.Account = AccountID[0].UserID;
     // Listen to the group
-    const [GroupInfo] = await pool.query("SELECT * FROM `Groups` WHERE UniqueID = ?", [Message['GroupID']])
+    const [GroupInfo] = await pool.query(
+      "SELECT * FROM `Groups` WHERE UniqueID = ?",
+      [Message["GroupID"]]
+    );
     if (GroupInfo.length == 0) {
       ws.send(JSON.stringify({ error: "Invalid Group ID" }));
       ws.close();
       return;
     }
-    console.log(GroupInfo[0].Members)
-    console.log(ws.Account)
+    console.log(GroupInfo[0].Members);
+    console.log(ws.Account);
     if (GroupInfo[0].Members.indexOf(ws.Account) == -1) {
       ws.send(JSON.stringify({ error: "You are not in this group" }));
       ws.close();
@@ -78,11 +84,6 @@ wss.on("connection", (ws) => {
     ws.dead = false;
   });
 });
-
-
-
-
-
 
 async function FindAccountType(Cookie) {
   //TODO: Check if the session has expired
@@ -205,14 +206,14 @@ app.get("/Group/:GroupID", async (req, res) => {
   res.render(__dirname + "/Pages/EJS/User/Group.ejs");
 });
 
-app.get('/DirectMessages', async (req, res) => {
+app.get("/DirectMessages", async (req, res) => {
   const AccountType = await FindAccountType(req.cookies.session_id);
   if (AccountType == "None" || AccountType == "Admin") {
     res.redirect("/Login");
     return;
   }
   res.render(__dirname + "/Pages/EJS/User/DirectMessages.ejs");
-})
+});
 
 app.get("/Login", async (req, res) => {
   if ((await FindAccountType(req.cookies.session_id)) != "None") {
@@ -793,13 +794,17 @@ app.get("/api/User/Group/Messages/:GroupID", async (req, res) => {
   res.send(Messages);
 });
 
-app.get('/api/User/CorporateSpeak', async (req, res) => {
+app.get("/api/User/CorporateSpeak", async (req, res) => {
   res.send({ Words: CorporateSpeakGenerator.buzzwords() });
-})
+});
 
-app.post('/api/User/Group/SendMessage', async (req, res) => {
+app.post("/api/User/Group/SendMessage", async (req, res) => {
   if ((await FindAccountType(req.cookies.session_id)) != "User") {
     res.sendStatus(404);
+    return;
+  }
+  if (req.body.Message == "") {
+    res.send("Invalid message");
     return;
   }
   let UserID = await pool.query(
@@ -830,8 +835,11 @@ app.post('/api/User/Group/SendMessage', async (req, res) => {
     res.send("You are not in this group");
     return;
   }
-  await pool.query("INSERT INTO GroupMessages (SenderID, GroupID, Message, MessageType) VALUES (?, ?, ?, ?)", [UserID, GroupData[0].ID, req.body.Message, 1])
-  res.send({ Success: true })
+  await pool.query(
+    "INSERT INTO GroupMessages (SenderID, GroupID, Message, MessageType) VALUES (?, ?, ?, ?)",
+    [UserID, GroupData[0].ID, req.body.Message, 1]
+  );
+  res.send({ Success: true });
   // Send it out to the websockets
   let Message;
   if (wss.clients.size != 0) {
@@ -854,8 +862,8 @@ app.post('/api/User/Group/SendMessage', async (req, res) => {
         hour: "numeric",
         minute: "numeric",
       }),
-      MessageType: 1
-    }
+      MessageType: 1,
+    };
   }
   wss.clients.forEach((ws) => {
     if (ws.ListeningTo == GroupData[0].ID) {
