@@ -191,6 +191,9 @@ app.get("/Settings", async (req, res) => {
   if (AccountType == "Admin") {
     res.render(__dirname + "/Pages/EJS/Admin/Settings.ejs");
   }
+  if (AccountType == "User") {
+    res.render(__dirname + "/Pages/EJS/User/Settings.ejs");
+  }
 });
 
 // ######
@@ -198,6 +201,7 @@ app.get("/Settings", async (req, res) => {
 // ######
 
 app.get("/Group/:GroupID", async (req, res) => {
+  // TODO: Do something if the group doesn't exist or the user isn't in it
   const AccountType = await FindAccountType(req.cookies.session_id);
   if (AccountType == "None" || AccountType == "Admin") {
     res.redirect("/Login");
@@ -207,6 +211,15 @@ app.get("/Group/:GroupID", async (req, res) => {
 });
 
 app.get("/DirectMessages", async (req, res) => {
+  const AccountType = await FindAccountType(req.cookies.session_id);
+  if (AccountType == "None" || AccountType == "Admin") {
+    res.redirect("/Login");
+    return;
+  }
+  res.render(__dirname + "/Pages/EJS/User/DirectMessages.ejs");
+});
+
+app.get("/DirectMessages/*", async (req, res) => {
   const AccountType = await FindAccountType(req.cookies.session_id);
   if (AccountType == "None" || AccountType == "Admin") {
     res.redirect("/Login");
@@ -231,7 +244,8 @@ app.post("/api/Login", async (req, res) => {
     .createHash("sha256")
     .update(req.body.Password)
     .digest("hex");
-  if (req.body.AdminLogin == "on") {
+  if (req.body.AdminLogin == true) {
+    console.log("here");
     const [AccountID] = await pool.query(
       "SELECT * FROM AdminAccounts WHERE Email = ? AND Password = ?",
       [Email, Password]
@@ -250,7 +264,7 @@ app.post("/api/Login", async (req, res) => {
       [AccountID[0].ID, SessionID, SessionExpiry]
     );
     res.cookie("session_id", SessionID);
-    res.redirect("/");
+    res.send({ success: true });
     return;
   }
   //Assumes user login
@@ -270,7 +284,7 @@ app.post("/api/Login", async (req, res) => {
     [AccountID[0].ID, SessionID, SessionExpiry]
   );
   res.cookie("session_id", SessionID);
-  res.redirect("/");
+  res.send({ success: true });
   return;
 });
 
@@ -523,7 +537,7 @@ app.post("/api/Admin/AddUserToGroup", async (req, res) => {
     [GroupID, ParentID[0][0].AdminID]
   );
   if (GroupData.length == 0) {
-    res.send("Invalid Group ID");
+    res.send({ error: true });
     return;
   }
   const [UserData] = await pool.query(
@@ -531,7 +545,7 @@ app.post("/api/Admin/AddUserToGroup", async (req, res) => {
     [UserID[0].ID, ParentID[0][0].AdminID]
   );
   if (UserData.length == 0) {
-    res.send("Invalid User ID");
+    res.send({ error: true });
     return;
   }
   let Members = GroupData[0].Members;
@@ -635,20 +649,20 @@ app.get("/api/User/Groups", async (req, res) => {
     "SELECT ParentID FROM UserAccounts WHERE ID = ?",
     [UserID]
   );
+  let Type;
+  console.log(req.query.Type);
+  if (req.query.Type == "Group") {
+    Type = 0;
+  }
+  if (req.query.Type == "DM") {
+    Type = 1;
+  }
   const [Groups] = await pool.query(
-    "SELECT Name,CreatedAt,Members,Admins,UniqueID FROM `Groups` WHERE ParentID = ?",
-    [ParentID[0].ParentID]
+    "SELECT Name,CreatedAt,Members,Admins,UniqueID FROM `Groups` WHERE ParentID = ? AND Type = ?",
+    [ParentID[0].ParentID, Type]
   );
   // Loop through the groups and check that the user is in them. If not remove them from the array
   console.log(Groups);
-  for (let i = 0; i < Groups.length; i++) {
-    if (Groups[i].Members.indexOf(UserID) !== -1) {
-      continue;
-    } else {
-      Groups.splice(i, 1);
-      i--;
-    }
-  }
 
   for (let i = 0; i < Groups.length; i++) {
     if (
@@ -658,6 +672,33 @@ app.get("/api/User/Groups", async (req, res) => {
     ) {
       Groups[i].Members = [];
     }
+    if (Groups[i].Members.indexOf(UserID) !== -1) {
+      continue;
+    } else {
+      Groups.splice(i, 1);
+      i--;
+    }
+  }
+
+  if ((Type = 1)) {
+    for (let i = 0; i < Groups.length; i++) {
+      CurrentUserIndex = Groups[i].Members.indexOf(UserID);
+      let OtherUserID;
+      if (CurrentUserIndex == 0) {
+        OtherUserID = Groups[i].Members[1];
+      } else {
+        OtherUserID = Groups[i].Members[0];
+      }
+      const [OtherUserData] = await pool.query(
+        "SELECT Firstname,Surname FROM UserAccounts WHERE ID = ?",
+        [OtherUserID]
+      );
+      Groups[i].Name =
+        OtherUserData[0].Firstname + " " + OtherUserData[0].Surname;
+    }
+  }
+
+  for (let i = 0; i < Groups.length; i++) {
     for (let j = 0; j < Groups[i].Members.length; j++) {
       const [MemberData] = await pool.query(
         "SELECT Firstname,Surname FROM UserAccounts WHERE ID = ?",
@@ -681,6 +722,7 @@ app.get("/api/User/Groups", async (req, res) => {
       Groups[i].Admins[j] = AdminData[0].Name;
     }
   }
+
   res.send(Groups);
 });
 
@@ -703,7 +745,7 @@ app.get("/api/User/Group/:GroupID", async (req, res) => {
     [req.params.GroupID, ParentID[0].ParentID]
   );
   if (GroupData.length == 0) {
-    res.send("Invalid Group ID");
+    res.send({ error: true });
     return;
   }
   if (
@@ -757,7 +799,7 @@ app.get("/api/User/Group/Messages/:GroupID", async (req, res) => {
     [req.params.GroupID, ParentID[0].ParentID]
   );
   if (GroupData.length == 0) {
-    res.send("Invalid Group ID");
+    res.send({ error: true });
     return;
   }
   if (
@@ -797,6 +839,46 @@ app.get("/api/User/Group/Messages/:GroupID", async (req, res) => {
 app.get("/api/User/CorporateSpeak", async (req, res) => {
   res.send({ Words: CorporateSpeakGenerator.buzzwords() });
 });
+
+app.get("/api/User/SearchUsers/:Search", async (req, res) => {
+  // TODO: Return more data like pfp etc
+  const AccountType = await FindAccountType(req.cookies.session_id);
+  if (AccountType != "User" && AccountType != "Admin") {
+    res.sendStatus(404);
+    return;
+  }
+  let ParentID;
+  if (AccountType == "User") {
+    let UserID = await pool.query(
+      "SELECT UserID FROM UserAccountSessions WHERE SessionID = ?",
+      [req.cookies.session_id]
+    );
+    UserID = UserID[0][0].UserID;
+    [ParentID] = await pool.query(
+      "SELECT ParentID FROM UserAccounts WHERE ID = ?",
+      [UserID]
+    );
+    ParentID = ParentID[0].ParentID;
+  }
+  if (AccountType == "Admin") {
+    [ParentID] = await pool.query(
+      "SELECT AdminID FROM AdminAccountSessions WHERE SessionID = ?",
+      [req.cookies.session_id]
+    );
+    ParentID = ParentID[0].AdminID;
+  }
+  console.log(ParentID);
+  const [Users] = await pool.query(
+    "SELECT Firstname,Surname FROM UserAccounts WHERE ParentID = ? AND CONCAT(Firstname, ' ', Surname) LIKE ? LIMIT 10",
+    [ParentID, "%" + req.params.Search + "%"]
+  );
+  for (i = 0; i < Users.length; i++) {
+    Users[i] = Users[i].Firstname + " " + Users[i].Surname;
+  }
+  res.send(Users);
+});
+
+// Post
 
 app.post("/api/User/Group/SendMessage", async (req, res) => {
   if ((await FindAccountType(req.cookies.session_id)) != "User") {
@@ -870,6 +952,48 @@ app.post("/api/User/Group/SendMessage", async (req, res) => {
       ws.send(JSON.stringify(Message));
     }
   });
+});
+
+app.post("/api/User/CreateDirectMessage", async (req, res) => {
+  if ((await FindAccountType(req.cookies.session_id)) != "User") {
+    res.sendStatus(404);
+    return;
+  }
+  let OtherUser = req.body.UserSelected;
+  if (OtherUser == "") {
+    res.send("Invalid user");
+    return;
+  }
+  // Find the userid of the other user
+  let UserID = await pool.query(
+    "SELECT ID FROM UserAccounts WHERE CONCAT(Firstname, ' ', Surname) = ?",
+    [OtherUser]
+  );
+  if (UserID[0].length == 0) {
+    res.send("Invalid user");
+    return;
+  }
+  OtherUser = UserID[0][0].ID;
+
+  UserID = await pool.query(
+    "SELECT UserID FROM UserAccountSessions WHERE SessionID = ?",
+    [req.cookies.session_id]
+  );
+  const CurrentUser = UserID[0][0].UserID;
+  console.log(CurrentUser);
+  // Create a group type 1 with the two users in it
+  const [ParentID] = await pool.query(
+    "SELECT ParentID FROM UserAccounts WHERE ID = ?",
+    [CurrentUser]
+  );
+  const GroupID = crypto.randomBytes(6).toString("hex");
+  const Members = `[${CurrentUser}, ${OtherUser}]`;
+  await pool.query(
+    "INSERT INTO `Groups` (Name, ParentID, UniqueID, Members, Type) VALUES (?, ?, ?, ?, ?)",
+    ["DM", ParentID[0].ParentID, GroupID, Members, 1]
+  );
+  res.redirect("/DirectMessages/");
+  // TODO: Build in checks for already existing
 });
 
 //######

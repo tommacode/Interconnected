@@ -137,6 +137,7 @@ input[type="email"] {
     border: none;
     box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.25);
     border-radius: 10px;
+    padding: 10px;
 }
 
 .LockAccountButton {
@@ -384,7 +385,7 @@ input[type="email"] {
     left: 92%;
 }
 
-#MessageWrapper{
+#MessageWrapper {
     position: absolute;
     top: 10%;
     left: 30%;

@@ -95,7 +95,9 @@
       ></a>
     </li>
     <li title="Logout">
-      <a href="/Logout"
+      <a
+        style="cursor: pointer"
+        onclick="document.getElementById('Logout').showModal()"
         ><?xml version="1.0" encoding="utf-8"?><!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
         <svg
           viewBox="0 0 24 24"
@@ -119,4 +121,20 @@
       </a>
     </li>
   </ul>
+  <dialog id="Logout" class="Dialog">
+    <h3>Are you sure you want to logout?</h3>
+    <button
+      class="RedButton"
+      onclick="document.cookie = 'session_id=;';window.location.href = '/Login'"
+    >
+      Logout
+    </button>
+    <button
+      class="BlackButton"
+      style="float: right"
+      onclick="document.getElementById('Logout').close()"
+    >
+      Cancel
+    </button>
+  </dialog>
 </nav>

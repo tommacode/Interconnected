@@ -11,14 +11,212 @@
     <div id="LeftMenuGroups">
       <div>
         <!-- Buttons to make a new chat etc -->
-        <button id="NewChatButton">New Chat</button>
-        <button id="NewGroupButton">New Group</button>
+        <button
+          class="BlackButton"
+          id="NewChatButton"
+          onclick="document.getElementById('NewChatDialog').showModal()"
+          style="margin-top: 10px; margin-right: 10px; float: right"
+        >
+          New Chat
+        </button>
+        <dialog id="NewChatDialog" class="Dialog">
+          <h3>Create DM</h3>
+          <form action="/api/User/CreateDirectMessage" method="post">
+            <input
+              id="UserSearch"
+              type="text"
+              placeholder="Search for a user..."
+              oninput="SearchForUser()"
+            />
+            <div id="SearchResults"></div>
+            <input
+              type="text"
+              name="UserSelected"
+              value=""
+              id="UserSelected"
+              hidden
+            />
+            <br />
+            <button type="submit" class="BlackButton" disabled>Create</button>
+          </form>
+        </dialog>
       </div>
+      <br />
+      <br />
+      <br />
     </div>
-    <main>
-      <div id="MessageWrapper"></div>
-      <input id="MainInput" type="text" placeholder="Write a Message..." />
-      <button id="MainButton" onclick="SendMessage()">Send</button>
-    </main>
+    <div id="MessageWrapper"></div>
+    <input id="MainInput" type="text" placeholder="Write a Message..." />
+    <button id="MainButton" onclick="SendMessage()">Send</button>
+    <script>
+      function SearchForUser() {
+        fetch(
+          `/api/User/SearchUsers/${
+            document.getElementById("UserSearch").value
+          }`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+          .then((res) => res.json())
+          .then((data) => {
+            document.getElementById("SearchResults").innerHTML = "";
+            data.forEach((user) => {
+              const User = document.createElement("div");
+              User.classList.add("User");
+              User.innerHTML = `<h3>${user}</h3>`;
+              User.addEventListener("click", () => {
+                document.getElementById("UserSelected").value = user;
+                document.getElementById("UserSearch").value = user;
+                document.getElementById("SearchResults").innerHTML = "";
+                document
+                  .querySelector("#NewChatDialog button[type=submit]")
+                  .removeAttribute("disabled");
+              });
+              document.getElementById("SearchResults").appendChild(User);
+            });
+          });
+      }
+      const GroupID = window.location.pathname.split("/")[2];
+      if (GroupID === undefined || GroupID === "") {
+        MainInput.classList.add("hidden");
+        MainButton.classList.add("hidden");
+        // Make a dummy message with the user being "Direct Messages" and the message being "Select a chat to start"
+        const Message = document.createElement("div");
+        Message.classList.add("Message");
+        Message.innerHTML = `<p class="Time">${new Date().toLocaleString()}</p><h3>Direct Messages</h3><p>Select a chat or create one!</p>`;
+        document.getElementById("MessageWrapper").appendChild(Message);
+      }
+      // Load other groups here
+      fetch("/api/User/Groups?Type=DM", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          data.forEach((group) => {
+            const Group = document.createElement("div");
+            Group.classList.add("ListGroup");
+            if (group.UniqueID === GroupID) Group.id = "ActiveGroup";
+            Group.innerHTML = `<h3>${group.Name}</h3>`;
+            Group.addEventListener("click", () => {
+              window.location.href = `/DirectMessages/${group.UniqueID}`;
+            });
+            document.getElementById("LeftMenuGroups").appendChild(Group);
+          });
+        });
+      // Get messages here
+      fetch(`/api/User/Group/Messages/${GroupID}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          data.forEach((message) => {
+            const Message = document.createElement("div");
+            Message.classList.add("Message");
+            Message.innerHTML = `<p class="Time">${message.CreatedAt}</p><h3>${message.Sender}</h3><p>${message.Message}</p>`;
+            document.getElementById("MessageWrapper").appendChild(Message);
+          });
+        });
+      function SendMessage() {
+        let Body = {
+          GroupID: GroupID,
+          Message: document.getElementById("MainInput").value,
+        };
+        fetch("/api/User/Group/SendMessage", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(Body),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.Success) {
+              document.getElementById("MainInput").value = "";
+            }
+          });
+      }
+      fetch("/api/User/CorporateSpeak", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          document.getElementById("MainInput").placeholder = data.Words + "...";
+        });
+      document
+        .getElementById("MainInput")
+        .addEventListener("keyup", (event) => {
+          if (event.keyCode === 13) {
+            event.preventDefault();
+            SendMessage();
+          }
+        });
+
+      // Connect to socket
+      function ConnectToSocket() {
+        const socket = new WebSocket("ws://localhost:3001");
+        socket.onopen = () => {
+          socket.send(
+            JSON.stringify({
+              session_id: document.cookie.split("=")[1],
+              GroupID: GroupID,
+            })
+          );
+        };
+        socket.onmessage = (event) => {
+          data = JSON.parse(event.data);
+          const Message = document.createElement("div");
+          Message.classList.add("Message");
+          Message.innerHTML = `<p class="Time">${data.CreatedAt}</p><h3>${data.Sender}</h3><p>${data.Message}</p>`;
+          document.getElementById("MessageWrapper").appendChild(Message);
+          const div = document.getElementById("MessageWrapper");
+          div.scrollTo({ top: div.scrollHeight });
+          if (SendNotifications) {
+            // Check that the sender is not the current user
+            if (
+              data.Sender != document.getElementById("AccountName").innerHTML
+            ) {
+              new Notification(
+                data.Sender +
+                  ` (${
+                    document.getElementById("ActiveGroup").children[0].innerHTML
+                  })`,
+                {
+                  body: data.Message,
+                }
+              );
+            }
+          }
+        };
+        onload = () => {
+          const div = document.getElementById("MessageWrapper");
+          div.scrollTo({ top: div.scrollHeight });
+        };
+        setTimeout(() => {
+          const div = document.getElementById("MessageWrapper");
+          div.scrollTo({ top: div.scrollHeight });
+        }, 1000);
+      }
+      if ((GroupID !== undefined) & (GroupID !== "")) ConnectToSocket();
+      // Get notification permisison
+      let SendNotifications = false;
+      Notification.requestPermission().then((result) => {
+        if (result === "granted") {
+          SendNotifications = true;
+        }
+      });
+    </script>
   </body>
 </html>

@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <link rel="stylesheet" href="/CSS/All.css" />
+    <link rel="stylesheet" href="/CSS/User.css" />
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=, initial-scale=1.0" />
@@ -31,14 +32,51 @@
         />
         <div id="LoginContextActions">
           <label for="RememberMe">Remember Me</label>
-          <input type="checkbox" name="RememberMe" />
+          <input type="checkbox" name="RememberMe" id="RememberMe" />
           <br />
           <label for="AdminLogin">Admin</label>
-          <input type="checkbox" name="AdminLogin" />
+          <input type="checkbox" name="AdminLogin" id="AdminLogin" />
           <br />
         </div>
         <input id="submit" type="submit" value="Login" />
       </form>
     </div>
+    <dialog id="Message" class="Dialog">
+      <h3>Error</h3>
+      <p id="MessageText"></p>
+      <button
+        onclick="document.getElementById('Message').close()"
+        class="BlackButton"
+      >
+        Close
+      </button>
+    </dialog>
+    <script>
+      // Submit the form with ajax
+      document.getElementById("LoginForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        fetch("/api/Login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            Email: document.getElementById("Email").value,
+            Password: document.getElementById("Password").value,
+            RememberMe: document.getElementById("RememberMe").checked,
+            AdminLogin: document.getElementById("AdminLogin").checked,
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              window.location.href = "/";
+            } else {
+              document.getElementById("MessageText").innerText = data.error;
+              document.getElementById("Message").showModal();
+            }
+          });
+      });
+    </script>
   </body>
 </html>

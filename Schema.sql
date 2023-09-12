@@ -71,7 +71,8 @@ CREATE TABLE `Groups`(
     CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Members JSON,
     Admins JSON,
-    UniqueID VARCHAR(16) NOT NULL
+    UniqueID VARCHAR(16) NOT NULL,
+    Type INT NOT NULL DEFAULT 0
 );
 
 Create Table GroupMessages(

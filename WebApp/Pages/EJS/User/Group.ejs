@@ -34,7 +34,7 @@
           });
         });
       // Load other groups here
-      fetch("/api/User/Groups", {
+      fetch("/api/User/Groups?Type=Group", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
