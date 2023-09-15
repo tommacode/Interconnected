@@ -82,7 +82,8 @@ Create Table GroupMessages(
     Message text NOT NULL,
     CreatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     MessageType int NOT NULL,
-    Deleted boolean NOT NULL DEFAULT 0
+    Deleted boolean NOT NULL DEFAULT 0,
+    UniqueID varchar(16) NOT NULL
 );
 
 Create Table GroupMessageTypes(

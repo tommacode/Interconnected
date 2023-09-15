@@ -4,6 +4,17 @@
     padding: 0;
 }
 
+::-webkit-scrollbar {
+    width: 7px;
+    background-color: var(--color-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--text-color);
+    border-radius: 10px;
+}
+
+
 .NavIcons {
     width: 30px;
     height: 30px;
@@ -392,7 +403,6 @@ input[type="email"] {
     width: 65%;
     height: 80%;
     overflow-x: hidden;
-    overflow-y: scroll;
 
     scroll-behavior: smooth;
 }

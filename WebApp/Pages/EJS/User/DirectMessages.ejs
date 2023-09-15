@@ -45,7 +45,7 @@
       <br />
       <br />
     </div>
-    <div id="MessageWrapper"></div>
+    <div onscroll="LoadMore()" id="MessageWrapper"></div>
     <input id="MainInput" type="text" placeholder="Write a Message..." />
     <button id="MainButton" onclick="SendMessage()">Send</button>
     <script>
@@ -121,6 +121,7 @@
         .then((data) => {
           data.forEach((message) => {
             const Message = document.createElement("div");
+            Message.id = message.UniqueID;
             Message.classList.add("Message");
             Message.innerHTML = `<p class="Time">${message.CreatedAt}</p><h3>${message.Sender}</h3><p>${message.Message}</p>`;
             document.getElementById("MessageWrapper").appendChild(Message);

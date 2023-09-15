@@ -1,5 +1,6 @@
 const express = require("express");
 const app = express();
+app.disable("x-powered-by");
 
 //Enable ejs
 app.set("view engine", "ejs");
@@ -244,7 +245,7 @@ app.post("/api/Login", async (req, res) => {
     .createHash("sha256")
     .update(req.body.Password)
     .digest("hex");
-  if (req.body.AdminLogin == true) {
+  if (req.body.AdminLogin) {
     console.log("here");
     const [AccountID] = await pool.query(
       "SELECT * FROM AdminAccounts WHERE Email = ? AND Password = ?",
@@ -814,9 +815,11 @@ app.get("/api/User/Group/Messages/:GroupID", async (req, res) => {
     return;
   }
   const [Messages] = await pool.query(
-    "SELECT SenderID,Message,CreatedAt,MessageType FROM GroupMessages WHERE GroupID = ? AND Deleted = 0 ORDER BY ID ASC LIMIT 50",
+    "SELECT SenderID,Message,CreatedAt,MessageType,UniqueID FROM GroupMessages WHERE GroupID = ? AND Deleted = 0 ORDER BY ID DESC LIMIT 25",
     [GroupData[0].ID]
   );
+  // Reverse the array so the newest messages are at the bottom
+  Messages.reverse();
   for (let i = 0; i < Messages.length; i++) {
     const [SenderData] = await pool.query(
       "SELECT Firstname,Surname FROM UserAccounts WHERE ID = ?",
@@ -917,9 +920,11 @@ app.post("/api/User/Group/SendMessage", async (req, res) => {
     res.send("You are not in this group");
     return;
   }
+  // Create a uniqueID
+  const MessageID = crypto.randomBytes(6).toString("hex");
   await pool.query(
-    "INSERT INTO GroupMessages (SenderID, GroupID, Message, MessageType) VALUES (?, ?, ?, ?)",
-    [UserID, GroupData[0].ID, req.body.Message, 1]
+    "INSERT INTO GroupMessages (SenderID, GroupID, Message, MessageType, UniqueID) VALUES (?, ?, ?, ?, ?)",
+    [UserID, GroupData[0].ID, req.body.Message, 1, MessageID]
   );
   res.send({ Success: true });
   // Send it out to the websockets
@@ -992,7 +997,7 @@ app.post("/api/User/CreateDirectMessage", async (req, res) => {
     "INSERT INTO `Groups` (Name, ParentID, UniqueID, Members, Type) VALUES (?, ?, ?, ?, ?)",
     ["DM", ParentID[0].ParentID, GroupID, Members, 1]
   );
-  res.redirect("/DirectMessages/");
+  res.redirect("/DirectMessages/" + GroupID);
   // TODO: Build in checks for already existing
 });
 
