@@ -86,10 +86,15 @@ wss.on("connection", (ws) => {
   });
 });
 
-async function FindAccountType(Cookie) {
+async function FindAccountType(Cookies) {
   //TODO: Check if the session has expired
+  const Cookie = Cookies.session_id
+
+
   if (Cookie == undefined || Cookie == null || Cookie == "") {
+    console.log("None")
     return "None";
+
   }
   const [AdminSessions] = await pool.query(
     "SELECT * FROM AdminAccountSessions WHERE SessionID = ?",
@@ -97,6 +102,7 @@ async function FindAccountType(Cookie) {
   );
   //check if the session has expired
   if (AdminSessions.length != 0) {
+    console.log("Admin")
     return "Admin";
   }
   const [UserSessions] = await pool.query(
@@ -104,15 +110,16 @@ async function FindAccountType(Cookie) {
     [Cookie]
   );
   if (UserSessions.length != 0) {
+    console.log("User")
     return "User";
   }
-
+  console.log("None")
   return "None";
 }
 
 app.get("/", async (req, res) => {
   //Optimise this by caching the FindAccountType result
-  const AccountType = await FindAccountType(req.cookies.session_id);
+  const AccountType = await FindAccountType(req.cookies);
   if (AccountType == "None") {
     res.redirect("/Login");
     return;
@@ -161,7 +168,7 @@ app.get("/", async (req, res) => {
 // ######
 
 app.get("/ManageUsers", async (req, res) => {
-  const AccountType = await FindAccountType(req.cookies.session_id);
+  const AccountType = await FindAccountType(req.cookies);
   if (AccountType == "None" || AccountType == "User") {
     res.redirect("/Login");
     return;
@@ -170,7 +177,7 @@ app.get("/ManageUsers", async (req, res) => {
 });
 
 app.get("/ManageGroups", async (req, res) => {
-  const AccountType = await FindAccountType(req.cookies.session_id);
+  const AccountType = await FindAccountType(req.cookies);
   if (AccountType == "None" || AccountType == "User") {
     res.redirect("/Login");
     return;
@@ -179,7 +186,7 @@ app.get("/ManageGroups", async (req, res) => {
 });
 
 app.get("/ManagePlans", async (req, res) => {
-  const AccountType = await FindAccountType(req.cookies.session_id);
+  const AccountType = await FindAccountType(req.cookies);
   if (AccountType == "None" || AccountType == "User") {
     res.redirect("/Login");
     return;
@@ -188,7 +195,7 @@ app.get("/ManagePlans", async (req, res) => {
 });
 
 app.get("/Settings", async (req, res) => {
-  const AccountType = await FindAccountType(req.cookies.session_id);
+  const AccountType = await FindAccountType(req.cookies);
   if (AccountType == "Admin") {
     res.render(__dirname + "/Pages/EJS/Admin/Settings.ejs");
   }
@@ -203,7 +210,7 @@ app.get("/Settings", async (req, res) => {
 
 app.get("/Group/:GroupID", async (req, res) => {
   // TODO: Do something if the group doesn't exist or the user isn't in it
-  const AccountType = await FindAccountType(req.cookies.session_id);
+  const AccountType = await FindAccountType(req.cookies);
   if (AccountType == "None" || AccountType == "Admin") {
     res.redirect("/Login");
     return;
@@ -212,7 +219,7 @@ app.get("/Group/:GroupID", async (req, res) => {
 });
 
 app.get("/DirectMessages", async (req, res) => {
-  const AccountType = await FindAccountType(req.cookies.session_id);
+  const AccountType = await FindAccountType(req.cookies);
   if (AccountType == "None" || AccountType == "Admin") {
     res.redirect("/Login");
     return;
@@ -221,7 +228,7 @@ app.get("/DirectMessages", async (req, res) => {
 });
 
 app.get("/DirectMessages/*", async (req, res) => {
-  const AccountType = await FindAccountType(req.cookies.session_id);
+  const AccountType = await FindAccountType(req.cookies);
   if (AccountType == "None" || AccountType == "Admin") {
     res.redirect("/Login");
     return;
@@ -230,7 +237,7 @@ app.get("/DirectMessages/*", async (req, res) => {
 });
 
 app.get("/Login", async (req, res) => {
-  if ((await FindAccountType(req.cookies.session_id)) != "None") {
+  if ((await FindAccountType(req.cookies)) != "None") {
     res.redirect("/");
     return;
   }
@@ -310,7 +317,7 @@ app.get("/ProfileImages/:File", async (req, res) => {
 
 //GET
 app.get("/api/Admin/Accounts", async (req, res) => {
-  if ((await FindAccountType(req.cookies.session_id)) != "Admin") {
+  if ((await FindAccountType(req.cookies)) != "Admin") {
     res.sendStatus(404);
     return;
   }
@@ -327,7 +334,7 @@ app.get("/api/Admin/Accounts", async (req, res) => {
 });
 
 app.get("/api/Admin/Groups", async (req, res) => {
-  if ((await FindAccountType(req.cookies.session_id)) != "Admin") {
+  if ((await FindAccountType(req.cookies)) != "Admin") {
     res.sendStatus(404);
     return;
   }
@@ -376,11 +383,11 @@ app.get("/api/Admin/Groups", async (req, res) => {
 });
 
 app.get("/api/Me", async (req, res) => {
-  if ((await FindAccountType(req.cookies.session_id)) == "None") {
+  if ((await FindAccountType(req.cookies)) == "None") {
     res.sendStatus(404);
     return;
   }
-  if ((await FindAccountType(req.cookies.session_id)) == "Admin") {
+  if ((await FindAccountType(req.cookies)) == "Admin") {
     let ParentID = await pool.query(
       "SELECT AdminID FROM AdminAccountSessions WHERE SessionID = ?",
       [req.cookies.session_id]
@@ -397,7 +404,7 @@ app.get("/api/Me", async (req, res) => {
     res.send(Account[0]);
     return;
   }
-  if ((await FindAccountType(req.cookies.session_id)) == "User") {
+  if ((await FindAccountType(req.cookies)) == "User") {
     let UserID = await pool.query(
       "SELECT UserID FROM UserAccountSessions WHERE SessionID = ?",
       [req.cookies.session_id]
@@ -415,7 +422,7 @@ app.get("/api/Me", async (req, res) => {
 //POST
 app.post("/api/Admin/CreateAccount", async (req, res) => {
   // TODO: Ban duplicates
-  if ((await FindAccountType(req.cookies.session_id)) != "Admin") {
+  if ((await FindAccountType(req.cookies)) != "Admin") {
     console.log("Not admin");
     res.sendStatus(404);
     return;
@@ -442,7 +449,7 @@ app.post("/api/Admin/CreateAccount", async (req, res) => {
 app.post("/api/Admin/CreateMultipleUsers", async (req, res) => {
   // TODO: Ban duplicates
   //Check that the user is an admin
-  if ((await FindAccountType(req.cookies.session_id)) != "Admin") {
+  if ((await FindAccountType(req.cookies)) != "Admin") {
     res.sendStatus(404);
     return;
   }
@@ -500,7 +507,7 @@ app.post("/api/Admin/CreateMultipleUsers", async (req, res) => {
 });
 
 app.post("/api/Admin/CreateGroup", async (req, res) => {
-  if ((await FindAccountType(req.cookies.session_id)) != "Admin") {
+  if ((await FindAccountType(req.cookies)) != "Admin") {
     res.sendStatus(404);
     return;
   }
@@ -519,7 +526,7 @@ app.post("/api/Admin/CreateGroup", async (req, res) => {
 });
 
 app.post("/api/Admin/AddUserToGroup", async (req, res) => {
-  if ((await FindAccountType(req.cookies.session_id)) != "Admin") {
+  if ((await FindAccountType(req.cookies)) != "Admin") {
     res.sendStatus(404);
     return;
   }
@@ -576,7 +583,7 @@ app.post("/api/Admin/AddUserToGroup", async (req, res) => {
 });
 
 app.post("/api/Admin/DeleteGroup", async (req, res) => {
-  if ((await FindAccountType(req.cookies.session_id)) != "Admin") {
+  if ((await FindAccountType(req.cookies)) != "Admin") {
     res.sendStatus(404);
     return;
   }
@@ -599,7 +606,7 @@ app.post("/api/Admin/DeleteGroup", async (req, res) => {
 
 app.put("/api/Me", async (req, res) => {
   const AllowedFields = ["Firstname", "Surname", "Email", "Password"];
-  const AccountType = await FindAccountType(req.cookies.session_id);
+  const AccountType = await FindAccountType(req.cookies);
   if (AccountType == "None") {
     res.sendStatus(404);
     return;
@@ -637,7 +644,7 @@ app.put("/api/Me", async (req, res) => {
 // ######
 
 app.get("/api/User/Groups", async (req, res) => {
-  if ((await FindAccountType(req.cookies.session_id)) != "User") {
+  if ((await FindAccountType(req.cookies)) != "User") {
     res.sendStatus(404);
     return;
   }
@@ -680,11 +687,13 @@ app.get("/api/User/Groups", async (req, res) => {
       i--;
     }
   }
-
-  if ((Type = 1)) {
+  if (Type == 1) {
     for (let i = 0; i < Groups.length; i++) {
       CurrentUserIndex = Groups[i].Members.indexOf(UserID);
       let OtherUserID;
+      if (CurrentUserIndex == -1) {
+        continue;
+      }
       if (CurrentUserIndex == 0) {
         OtherUserID = Groups[i].Members[1];
       } else {
@@ -728,7 +737,7 @@ app.get("/api/User/Groups", async (req, res) => {
 });
 
 app.get("/api/User/Group/:GroupID", async (req, res) => {
-  if ((await FindAccountType(req.cookies.session_id)) != "User") {
+  if ((await FindAccountType(req.cookies)) != "User") {
     res.sendStatus(404);
     return;
   }
@@ -782,7 +791,7 @@ app.get("/api/User/Group/:GroupID", async (req, res) => {
 });
 
 app.get("/api/User/Group/Messages/:GroupID", async (req, res) => {
-  if ((await FindAccountType(req.cookies.session_id)) != "User") {
+  if ((await FindAccountType(req.cookies)) != "User") {
     res.sendStatus(404);
     return;
   }
@@ -815,7 +824,7 @@ app.get("/api/User/Group/Messages/:GroupID", async (req, res) => {
     return;
   }
   const [Messages] = await pool.query(
-    "SELECT SenderID,Message,CreatedAt,MessageType,UniqueID FROM GroupMessages WHERE GroupID = ? AND Deleted = 0 ORDER BY ID DESC LIMIT 25",
+    "SELECT SenderID,Message,CreatedAt,MessageType,UniqueID FROM GroupMessages WHERE GroupID = ? AND Deleted = 0 ORDER BY ID DESC LIMIT 10",
     [GroupData[0].ID]
   );
   // Reverse the array so the newest messages are at the bottom
@@ -845,7 +854,7 @@ app.get("/api/User/CorporateSpeak", async (req, res) => {
 
 app.get("/api/User/SearchUsers/:Search", async (req, res) => {
   // TODO: Return more data like pfp etc
-  const AccountType = await FindAccountType(req.cookies.session_id);
+  const AccountType = await FindAccountType(req.cookies);
   if (AccountType != "User" && AccountType != "Admin") {
     res.sendStatus(404);
     return;
@@ -884,7 +893,7 @@ app.get("/api/User/SearchUsers/:Search", async (req, res) => {
 // Post
 
 app.post("/api/User/Group/SendMessage", async (req, res) => {
-  if ((await FindAccountType(req.cookies.session_id)) != "User") {
+  if ((await FindAccountType(req.cookies)) != "User") {
     res.sendStatus(404);
     return;
   }
@@ -960,7 +969,7 @@ app.post("/api/User/Group/SendMessage", async (req, res) => {
 });
 
 app.post("/api/User/CreateDirectMessage", async (req, res) => {
-  if ((await FindAccountType(req.cookies.session_id)) != "User") {
+  if ((await FindAccountType(req.cookies)) != "User") {
     res.sendStatus(404);
     return;
   }
@@ -1030,7 +1039,7 @@ app.get("/Success", async (req, res) => {
 });
 
 app.get("/api/subscription/status/:SessionID", async (req, res) => {
-  let AccountType = await FindAccountType(req.cookies.session_id);
+  let AccountType = await FindAccountType(req.cookies);
   if (AccountType == "User" || AccountType == "None") {
     res.send("Error");
     return;

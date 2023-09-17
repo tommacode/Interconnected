@@ -6,7 +6,7 @@
     <title>Direct Messages | Interconnected</title>
     <%- include("Partials/Head.html") %>
   </head>
-  <body>
+  <body onload="GetGroupID(); LoadGroups(); LoadMessages()">
     <%- include("Partials/Navigation.html") %>
     <div id="LeftMenuGroups">
       <div>
@@ -46,8 +46,10 @@
       <br />
     </div>
     <div onscroll="LoadMore()" id="MessageWrapper"></div>
-    <input id="MainInput" type="text" placeholder="Write a Message..." />
-    <button id="MainButton" onclick="SendMessage()">Send</button>
+    <div id="InputDiv">
+      <input id="MainInput" type="text" placeholder="Write a Message..." />
+      <button id="MainButton" onclick="SendMessage()">Send</button>
+    </div>
     <script>
       function SearchForUser() {
         fetch(
@@ -80,53 +82,65 @@
             });
           });
       }
-      const GroupID = window.location.pathname.split("/")[2];
-      if (GroupID === undefined || GroupID === "") {
-        MainInput.classList.add("hidden");
-        MainButton.classList.add("hidden");
-        // Make a dummy message with the user being "Direct Messages" and the message being "Select a chat to start"
-        const Message = document.createElement("div");
-        Message.classList.add("Message");
-        Message.innerHTML = `<p class="Time">${new Date().toLocaleString()}</p><h3>Direct Messages</h3><p>Select a chat or create one!</p>`;
-        document.getElementById("MessageWrapper").appendChild(Message);
+      let GroupID = "";
+      function GetGroupID() {
+        GroupID = window.location.pathname.split("/")[2];
+        if (GroupID === undefined || GroupID === "") {
+          MainInput.classList.add("hidden");
+          MainButton.classList.add("hidden");
+          // Make a dummy message with the user being "Direct Messages" and the message being "Select a chat to start"
+          const Message = document.createElement("div");
+          Message.classList.add("Message");
+          Message.innerHTML = `<p class="Time">${new Date().toLocaleString()}</p><h3>Direct Messages</h3><p>Select a chat or create one!</p>`;
+          document.getElementById("MessageWrapper").appendChild(Message);
+        } else {
+          ConnectToSocket();
+          CorporateSpeak();
+        }
       }
       // Load other groups here
-      fetch("/api/User/Groups?Type=DM", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          data.forEach((group) => {
-            const Group = document.createElement("div");
-            Group.classList.add("ListGroup");
-            if (group.UniqueID === GroupID) Group.id = "ActiveGroup";
-            Group.innerHTML = `<h3>${group.Name}</h3>`;
-            Group.addEventListener("click", () => {
-              window.location.href = `/DirectMessages/${group.UniqueID}`;
+      function LoadGroups() {
+        fetch("/api/User/Groups?Type=DM", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            data.forEach((group) => {
+              const Group = document.createElement("div");
+              Group.classList.add("ListGroup");
+              if (group.UniqueID === GroupID)
+                Group.classList.add("ActiveGroup");
+              Group.id = group.UniqueID;
+              Group.innerHTML = `<h3>${group.Name}</h3>`;
+              Group.addEventListener("click", () => {
+                ChangeGroup(group.UniqueID);
+              });
+              document.getElementById("LeftMenuGroups").appendChild(Group);
             });
-            document.getElementById("LeftMenuGroups").appendChild(Group);
           });
-        });
+      }
       // Get messages here
-      fetch(`/api/User/Group/Messages/${GroupID}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          data.forEach((message) => {
-            const Message = document.createElement("div");
-            Message.id = message.UniqueID;
-            Message.classList.add("Message");
-            Message.innerHTML = `<p class="Time">${message.CreatedAt}</p><h3>${message.Sender}</h3><p>${message.Message}</p>`;
-            document.getElementById("MessageWrapper").appendChild(Message);
+      function LoadMessages() {
+        fetch(`/api/User/Group/Messages/${GroupID}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            data.forEach((message) => {
+              const Message = document.createElement("div");
+              Message.id = message.UniqueID;
+              Message.classList.add("Message");
+              Message.innerHTML = `<p class="Time">${message.CreatedAt}</p><h3>${message.Sender}</h3><p>${message.Message}</p>`;
+              document.getElementById("MessageWrapper").appendChild(Message);
+            });
           });
-        });
+      }
       function SendMessage() {
         let Body = {
           GroupID: GroupID,
@@ -146,24 +160,28 @@
             }
           });
       }
-      fetch("/api/User/CorporateSpeak", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          document.getElementById("MainInput").placeholder = data.Words + "...";
-        });
-      document
-        .getElementById("MainInput")
-        .addEventListener("keyup", (event) => {
-          if (event.keyCode === 13) {
-            event.preventDefault();
-            SendMessage();
-          }
-        });
+
+      function CorporateSpeak() {
+        fetch("/api/User/CorporateSpeak", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            document.getElementById("MainInput").placeholder =
+              data.Words + "...";
+          });
+        document
+          .getElementById("MainInput")
+          .addEventListener("keyup", (event) => {
+            if (event.keyCode === 13) {
+              event.preventDefault();
+              SendMessage();
+            }
+          });
+      }
 
       // Connect to socket
       function ConnectToSocket() {
@@ -210,7 +228,7 @@
           div.scrollTo({ top: div.scrollHeight });
         }, 1000);
       }
-      if ((GroupID !== undefined) & (GroupID !== "")) ConnectToSocket();
+
       // Get notification permisison
       let SendNotifications = false;
       Notification.requestPermission().then((result) => {
@@ -218,6 +236,32 @@
           SendNotifications = true;
         }
       });
+
+      // Change group
+      function ChangeGroup(NewGroupID) {
+        if (NewGroupID === GroupID) return;
+        // Check to see if there is an open group
+        if (GroupID == "" || GroupID == undefined) {
+          MainInput.classList.remove("hidden");
+          MainButton.classList.remove("hidden");
+        } else {
+          const OldGroup = document.getElementById(GroupID);
+          OldGroup.classList.remove("ActiveGroup");
+        }
+        const NewGroup = document.getElementById(NewGroupID);
+        NewGroup.classList.add("ActiveGroup");
+        GroupID = NewGroupID;
+        document.getElementById("MessageWrapper").innerHTML = "";
+        LoadMessages();
+        ConnectToSocket();
+        const newURL =
+          window.location.protocol +
+          "//" +
+          window.location.host +
+          "/DirectMessages/" +
+          NewGroupID;
+        history.pushState(null, null, newURL);
+      }
     </script>
   </body>
 </html>
