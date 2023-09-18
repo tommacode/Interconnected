@@ -146,7 +146,7 @@
           GroupID: GroupID,
           Message: document.getElementById("MainInput").value,
         };
-        fetch("/api/User/Group/SendMessage", {
+        fetch("/api/User/SendMessage", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title></title>
+    <title>Groups | Interconnected</title>
     <%- include('Partials/Head.html') %>
   </head>
   <body onload="GetGroupID(); LoadGroups(); LoadMessages()">
@@ -12,13 +12,28 @@
     <main>
       <div id="MessageWrapper"></div>
       <div id="InputDiv">
-        <select name="" id="">
-          <option value="Standard">Normal</option>
+        <select name="MessageType" id="MessageType">
+          <option value="Normal">Normal</option>
           <option value="Question">Question</option>
           <option value="Information">Information</option>
           <option value="Meeting">Meeting</option>
         </select>
-        <br />
+        <div id="MeetingMessageOptions" class="hidden">
+          <label for="MeetingDate">Meeting Date:</label>
+          <input type="datetime-local" name="MeetingDate" />
+          <label for="MeetingLength">Meeting Length (Minutes):</label>
+          <input type="number" min="1" step="1" name="MeetingLength" />
+        </div>
+        <div id="InformationMessageOptions" class="hidden">
+          <label for="AllowResponses">Allow comments:</label>
+          <input type="checkbox" />
+          <br />
+        </div>
+        <div id="QuestionMessageOptions" class="hidden">
+          <label for="ShowOnNoticeBoard">Show on notice board:</label>
+          <input type="checkbox" name="ShowOnNoticeBoard" />
+        </div>
+        <div id="NormalMessageOptions"></div>
         <input id="MainInput" type="text" placeholder="Write a Message..." />
         <button id="MainButton" onclick="SendMessage()">Send</button>
       </div>
@@ -75,20 +90,39 @@
           .then((res) => res.json())
           .then((data) => {
             data.forEach((message) => {
-              const Message = document.createElement("div");
-              Message.id = message.UniqueID;
-              Message.classList.add("Message");
-              Message.innerHTML = `<p class="Time">${message.CreatedAt}</p><h3>${message.Sender}</h3><p>${message.Message}</p>`;
-              document.getElementById("MessageWrapper").appendChild(Message);
+              RenderMessage(message);
             });
           });
       }
       function SendMessage() {
+        const MessageType = document.getElementById("MessageType").value;
+        let Children = document.getElementById(
+          `${MessageType}MessageOptions`
+        ).children;
+        let MessageOptions = [];
+        for (let i = 0; i < Children.length; i++) {
+          if (Children[i].tagName === "INPUT") {
+            if (Children[i].type === "checkbox") {
+              MessageOptions.push({
+                Name: Children[i].name,
+                Value: Children[i].checked,
+              });
+            } else {
+              MessageOptions.push({
+                Name: Children[i].name,
+                Value: Children[i].value,
+              });
+            }
+          }
+        }
+
         let Body = {
           GroupID: GroupID,
           Message: document.getElementById("MainInput").value,
+          MessageType: MessageType,
+          MessageOptions: MessageOptions,
         };
-        fetch("/api/User/Group/SendMessage", {
+        fetch("/api/User/SendMessage", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -99,6 +133,13 @@
           .then((data) => {
             if (data.Success) {
               document.getElementById("MainInput").value = "";
+              document.getElementById("MessageType").value = "Normal";
+              document
+                .getElementById(`${MessageType}MessageOptions`)
+                .classList.add("hidden");
+              document
+                .getElementById("NormalMessageOptions")
+                .classList.remove("hidden");
             }
           });
       }
@@ -138,11 +179,7 @@
         };
         socket.onmessage = (event) => {
           data = JSON.parse(event.data);
-          const Message = document.createElement("div");
-          Message.classList.add("Message");
-          Message.innerHTML = `<p class="Time">${data.CreatedAt}</p><h3>${data.Sender}</h3><p>${data.Message}</p>`;
-          document.getElementById("MessageWrapper").appendChild(Message);
-          const div = document.getElementById("MessageWrapper");
+          RenderMessage(data);
           div.scrollTo({ top: div.scrollHeight });
           if (SendNotifications) {
             // Check that the sender is not the current user
@@ -203,6 +240,46 @@
           "/Group/" +
           NewGroupID;
         history.pushState(null, null, newURL);
+      }
+      // Create event listeniner
+
+      document.getElementById("MessageType").addEventListener("change", () => {
+        const QuestionType = document.getElementById("MessageType").value;
+        // Hide them all then show the one we want
+        document.getElementById("NormalMessageOptions").classList.add("hidden");
+        document
+          .getElementById("QuestionMessageOptions")
+          .classList.add("hidden");
+        document
+          .getElementById("InformationMessageOptions")
+          .classList.add("hidden");
+        document
+          .getElementById("MeetingMessageOptions")
+          .classList.add("hidden");
+        document
+          .getElementById(`${QuestionType}MessageOptions`)
+          .classList.remove("hidden");
+      });
+      function RenderMessage(Message) {
+        const AltTypes = ["Question", "Information", "Meeting"];
+        if (!AltTypes.includes(Message.MessageType)) {
+          Message.MessageType = "Normal";
+        }
+        console.log(Message.Message);
+        let MessageDiv = document.createElement("div");
+        MessageDiv.classList.add("Message");
+        if (Message.MessageType == "Normal") {
+          MessageDiv.innerHTML = `<p class="Time">${Message.CreatedAt}</p><h3>${Message.Sender}</h3><p>${Message.Message}</p>`;
+        }
+        if (Message.MessageType == "Question") {
+          MessageDiv.innerHTML = `<p class="Time">${Message.CreatedAt}</p><h3>${Message.Sender}</h3><p>${Message.Message}</p><form><input type="text" placeholder="Answer..." class="Input"><button class="BlackButton">Send</button></form>`;
+        }
+        if (Message.MessageType == "Information") {
+          MessageDiv.innerHTML = `<p class="Time">${Message.CreatedAt}</p><h3>${Message.Sender}</h3><p>${Message.Message}</p><button>Aknowledge</button>`;
+        }
+        document.getElementById("MessageWrapper").appendChild(MessageDiv);
+        const div = document.getElementById("MessageWrapper");
+        div.scrollTo({ top: div.scrollHeight });
       }
     </script>
   </body>

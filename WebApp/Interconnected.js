@@ -88,13 +88,11 @@ wss.on("connection", (ws) => {
 
 async function FindAccountType(Cookies) {
   //TODO: Check if the session has expired
-  const Cookie = Cookies.session_id
-
+  const Cookie = Cookies.session_id;
 
   if (Cookie == undefined || Cookie == null || Cookie == "") {
-    console.log("None")
+    console.log("None");
     return "None";
-
   }
   const [AdminSessions] = await pool.query(
     "SELECT * FROM AdminAccountSessions WHERE SessionID = ?",
@@ -102,7 +100,7 @@ async function FindAccountType(Cookies) {
   );
   //check if the session has expired
   if (AdminSessions.length != 0) {
-    console.log("Admin")
+    console.log("Admin");
     return "Admin";
   }
   const [UserSessions] = await pool.query(
@@ -110,10 +108,10 @@ async function FindAccountType(Cookies) {
     [Cookie]
   );
   if (UserSessions.length != 0) {
-    console.log("User")
+    console.log("User");
     return "User";
   }
-  console.log("None")
+  console.log("None");
   return "None";
 }
 
@@ -311,6 +309,10 @@ app.get("/ProfileImages/:File", async (req, res) => {
   res.sendFile(__dirname + "/Pages//Media/ProfileImages/" + File);
 });
 
+app.get("/Favicon.ico", async (req, res) => {
+  res.sendFile(__dirname + "/Pages/Media/Favicon.ico");
+});
+
 //######
 //Admin APIs
 //######
@@ -344,7 +346,7 @@ app.get("/api/Admin/Groups", async (req, res) => {
   );
   ParentID = ParentID[0][0].AdminID;
   const [Groups] = await pool.query(
-    "SELECT Name,CreatedAt,Members,Admins,UniqueID FROM `Groups` WHERE ParentID = ?",
+    "SELECT Name,CreatedAt,Members,Admins,UniqueID FROM `Groups` WHERE ParentID = ? AND Type = 0",
     [ParentID]
   );
   console.log(Groups);
@@ -824,7 +826,7 @@ app.get("/api/User/Group/Messages/:GroupID", async (req, res) => {
     return;
   }
   const [Messages] = await pool.query(
-    "SELECT SenderID,Message,CreatedAt,MessageType,UniqueID FROM GroupMessages WHERE GroupID = ? AND Deleted = 0 ORDER BY ID DESC LIMIT 10",
+    "SELECT SenderID,Message,CreatedAt,MessageType,UniqueID,MessageData FROM GroupMessages WHERE GroupID = ? AND Deleted = 0 ORDER BY ID DESC LIMIT 10",
     [GroupData[0].ID]
   );
   // Reverse the array so the newest messages are at the bottom
@@ -892,7 +894,7 @@ app.get("/api/User/SearchUsers/:Search", async (req, res) => {
 
 // Post
 
-app.post("/api/User/Group/SendMessage", async (req, res) => {
+app.post("/api/User/SendMessage", async (req, res) => {
   if ((await FindAccountType(req.cookies)) != "User") {
     res.sendStatus(404);
     return;
@@ -931,9 +933,25 @@ app.post("/api/User/Group/SendMessage", async (req, res) => {
   }
   // Create a uniqueID
   const MessageID = crypto.randomBytes(6).toString("hex");
+  let MessageType = "1";
+  if (
+    req.body.MessageType != undefined ||
+    req.body.MessageType != null ||
+    req.body.MessageType != ""
+  ) {
+    MessageType = req.body.MessageType;
+  }
+  // TODO: Add a check to make sure if the messagetype is different that the group type is a group
   await pool.query(
-    "INSERT INTO GroupMessages (SenderID, GroupID, Message, MessageType, UniqueID) VALUES (?, ?, ?, ?, ?)",
-    [UserID, GroupData[0].ID, req.body.Message, 1, MessageID]
+    "INSERT INTO GroupMessages (SenderID, GroupID, Message, MessageType, UniqueID, MessageData) VALUES (?, ?, ?, ?, ?, ?)",
+    [
+      UserID,
+      GroupData[0].ID,
+      req.body.Message,
+      MessageType,
+      MessageID,
+      JSON.stringify(req.body.MessageOptions),
+    ]
   );
   res.send({ Success: true });
   // Send it out to the websockets
@@ -944,14 +962,12 @@ app.post("/api/User/Group/SendMessage", async (req, res) => {
       "SELECT Firstname,Surname FROM UserAccounts WHERE ID = ?",
       [UserID]
     );
-    const [MessageMetadata] = await pool.query(
-      "SELECT ID,CreatedAt FROM GroupMessages WHERE SenderID = ? AND GroupID = ? AND Message = ? AND MessageType = ?",
-      [UserID, GroupData[0].ID, req.body.Message, 1]
-    );
+    CurrentTime = new Date();
+
     Message = {
       Sender: SenderData[0].Firstname + " " + SenderData[0].Surname,
       Message: req.body.Message,
-      CreatedAt: MessageMetadata[0].CreatedAt.toLocaleString("en-GB", {
+      CreatedAt: CurrentTime.toLocaleString("en-GB", {
         year: "numeric",
         month: "numeric",
         day: "numeric",
@@ -959,6 +975,9 @@ app.post("/api/User/Group/SendMessage", async (req, res) => {
         minute: "numeric",
       }),
       MessageType: 1,
+      UniqueID: MessageID,
+      MessageData: req.body.MessageOptions,
+      MessageType: MessageType,
     };
   }
   wss.clients.forEach((ws) => {

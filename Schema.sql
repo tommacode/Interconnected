@@ -83,11 +83,7 @@ Create Table GroupMessages(
     CreatedAt datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     MessageType int NOT NULL,
     Deleted boolean NOT NULL DEFAULT 0,
-    UniqueID varchar(16) NOT NULL
+    UniqueID varchar(16) NOT NULL,
+    MessageData JSON
 );
 
-Create Table GroupMessageTypes(
-    ID int NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    Name varchar(255) NOT NULL,
-    Color varchar(7) NOT NULL
-);
