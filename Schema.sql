@@ -84,6 +84,7 @@ Create Table GroupMessages(
     MessageType int NOT NULL,
     Deleted boolean NOT NULL DEFAULT 0,
     UniqueID varchar(16) NOT NULL,
-    MessageData JSON
+    MessageData JSON,
+    MessageInteractions JSON
 );
 

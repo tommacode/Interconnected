@@ -332,13 +332,14 @@ input[type="email"] {
     cursor: pointer;
 }
 
-.Input {
+.InputWide {
     border: none;
     border-bottom: 1px solid #1d1d1f;
     background-color: inherit;
     padding: 10px;
     margin-bottom: 10px;
     font-size: 1em;
+    width: 80%;
 }
 
 .Input:focus {
@@ -386,9 +387,11 @@ input[type="email"] {
 
 #InputDiv {
     position: absolute;
-    top: 90%;
+    top: 86.5%;
     left: 30%;
     width: 65%;
+    height: 10%;
+    background-color: #fff;
 }
 
 #MainInput {
@@ -419,17 +422,89 @@ input[type="email"] {
 
 #MessageWrapper {
     position: absolute;
-    top: 10%;
+    top: 8%;
     left: 30%;
     width: 65%;
-    height: 80%;
+    height: 78%;
     overflow-x: hidden;
-
+    z-index: -1;
     scroll-behavior: smooth;
 }
 
 .Time {
     font-size: 0.75em;
-    color: #a6a6a6;
+    color: #454545;
     float: right;
+}
+
+#MessageType {
+    /* aesthetically style the dropdown menu */
+    border: none;
+    border-bottom: 1px solid #1d1d1f;
+    background-color: inherit;
+    padding: 10px;
+    margin-bottom: 2px;
+    font-size: 1em;
+}
+
+input:focus {
+    outline: none;
+}
+
+
+/* Message Classes */
+
+.Normal {
+    border-radius: 10px;
+    margin-bottom: 10px;
+    width: 50%;
+    clear: both;
+}
+
+.Question {
+    background-color: #22cc13;
+    color: #000;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+    width: 50%;
+    clear: both;
+}
+
+.Question .AnswerTable {
+    border-collapse: collapse;
+    width: 100%;
+    background-color: #fff;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+
+.Question .AnswerTable td {
+    padding: 10px;
+}
+
+.Question .AnswerTable th {
+    padding: 10px;
+    border-bottom: 1px solid #000;
+    text-align: left;
+}
+
+
+.Information {
+    background-color: #0ba8fd;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+    width: 50%;
+    clear: both;
+}
+
+.Meeting {
+    background-color: #ff9500;
+    color: #fff;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+    width: 50%;
+    clear: both;
 }

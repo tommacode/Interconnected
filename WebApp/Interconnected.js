@@ -115,6 +115,13 @@ async function FindAccountType(Cookies) {
   return "None";
 }
 
+function PresenceCheck(Variable) {
+  if (Variable == undefined || Variable == null || Variable == "") {
+    return false;
+  }
+  return true;
+}
+
 app.get("/", async (req, res) => {
   //Optimise this by caching the FindAccountType result
   const AccountType = await FindAccountType(req.cookies);
@@ -792,7 +799,7 @@ app.get("/api/User/Group/:GroupID", async (req, res) => {
   res.send(GroupData[0]);
 });
 
-app.get("/api/User/Group/Messages/:GroupID", async (req, res) => {
+app.get("/api/User/Messages/:GroupID", async (req, res) => {
   if ((await FindAccountType(req.cookies)) != "User") {
     res.sendStatus(404);
     return;
@@ -826,7 +833,7 @@ app.get("/api/User/Group/Messages/:GroupID", async (req, res) => {
     return;
   }
   const [Messages] = await pool.query(
-    "SELECT SenderID,Message,CreatedAt,MessageType,UniqueID,MessageData FROM GroupMessages WHERE GroupID = ? AND Deleted = 0 ORDER BY ID DESC LIMIT 10",
+    "SELECT SenderID,Message,CreatedAt,MessageType,UniqueID,MessageInteractions FROM GroupMessages WHERE GroupID = ? AND Deleted = 0 ORDER BY ID DESC LIMIT 10",
     [GroupData[0].ID]
   );
   // Reverse the array so the newest messages are at the bottom
@@ -846,6 +853,26 @@ app.get("/api/User/Group/Messages/:GroupID", async (req, res) => {
       hour: "numeric",
       minute: "numeric",
     });
+    // Specific instructions for each message type
+
+    // #####
+    // Question
+    // #####
+    if (Messages[i].MessageType == "Question") {
+      try {
+        for (ii = 0; ii < Messages[i].MessageInteractions.length; ii++) {
+          let [Username] = await pool.query(
+            "SELECT Firstname,Surname FROM UserAccounts WHERE ID = ?",
+            [Messages[i].MessageInteractions[ii].UserID]
+          );
+          Messages[i].MessageInteractions[ii].User =
+            Username[0].Firstname + " " + Username[0].Surname;
+          delete Messages[i].MessageInteractions[ii].UserID;
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    }
   }
   res.send(Messages);
 });
@@ -943,7 +970,7 @@ app.post("/api/User/SendMessage", async (req, res) => {
   }
   // TODO: Add a check to make sure if the messagetype is different that the group type is a group
   await pool.query(
-    "INSERT INTO GroupMessages (SenderID, GroupID, Message, MessageType, UniqueID, MessageData) VALUES (?, ?, ?, ?, ?, ?)",
+    "INSERT INTO GroupMessages (SenderID, GroupID, Message, MessageType, UniqueID, MessageData, MessageInteractions) VALUES (?, ?, ?, ?, ?, ?, ?)",
     [
       UserID,
       GroupData[0].ID,
@@ -951,6 +978,7 @@ app.post("/api/User/SendMessage", async (req, res) => {
       MessageType,
       MessageID,
       JSON.stringify(req.body.MessageOptions),
+      "[]",
     ]
   );
   res.send({ Success: true });
@@ -978,6 +1006,7 @@ app.post("/api/User/SendMessage", async (req, res) => {
       UniqueID: MessageID,
       MessageData: req.body.MessageOptions,
       MessageType: MessageType,
+      MessageInteractions: [],
     };
   }
   wss.clients.forEach((ws) => {
@@ -985,6 +1014,138 @@ app.post("/api/User/SendMessage", async (req, res) => {
       ws.send(JSON.stringify(Message));
     }
   });
+});
+
+app.post("/api/User/MessageInteraction", async (req, res) => {
+  if ((await FindAccountType(req.cookies)) != "User") {
+    res.sendStatus(404);
+    return;
+  }
+  // Check that all the required pieces of information are present
+  if (
+    !PresenceCheck(req.body.MessageID) ||
+    !PresenceCheck(req.body.MessageType)
+  ) {
+    res.send("Invalid message");
+    return;
+  }
+  let UserID = await pool.query(
+    "SELECT UserID FROM UserAccountSessions WHERE SessionID = ?",
+    [req.cookies.session_id]
+  );
+  UserID = UserID[0][0].UserID;
+
+  if (req.body.MessageType == "Question") {
+    if (!PresenceCheck(req.body.Answer)) {
+      return;
+    }
+    // Check the user hasn't already answered the question
+    let [MessageData] = await pool.query(
+      "SELECT MessageInteractions FROM GroupMessages WHERE UniqueID = ?",
+      [req.body.MessageID]
+    );
+
+    if (
+      MessageData.length === 0 ||
+      !MessageData[0].MessageInteractions.length
+    ) {
+      MessageData = [];
+    } else {
+      MessageData = MessageData[0].MessageInteractions;
+    }
+
+    for (let i = 0; i < MessageData.length; i++) {
+      if (MessageData[i].UserID == UserID) {
+        res.send({ Success: false, Message: "You have already answered" });
+        return;
+      }
+    }
+    let Answer = {
+      UserID: UserID,
+      Answer: req.body.Answer,
+      Time: new Date(),
+    };
+    console.log(MessageData);
+    MessageData.push(Answer);
+    await pool.query(
+      "UPDATE GroupMessages SET MessageInteractions = ? WHERE UniqueID = ?",
+      [JSON.stringify(MessageData), req.body.MessageID]
+    );
+    res.send({ Success: true });
+  }
+
+  if (req.body.MessageType == "Information") {
+    // Check the user hasn't already answered the question
+    const [MessageData] = await pool.query(
+      "SELECT MessageInteractions FROM GroupMessages WHERE UniqueID = ?",
+      [req.body.MessageID]
+    );
+    if (typeof MessageData[0].PositiveInteraction == "undefined") {
+      MessageData[0].PositiveInteraction = [];
+    }
+    let Answered = MessageData[0].PositiveInteraction;
+    if (Answered == null || Answered == "" || Answered == []) {
+      Answered = [];
+    }
+    if (Answered.includes(UserID)) {
+      res.send("You have already answered this question");
+      return;
+    }
+    Answered.push(UserID);
+    await pool.query(
+      "UPDATE GroupMessages SET MessageInteractions = ? WHERE UniqueID = ?",
+      [
+        JSON.stringify({
+          PositiveInteraction: Answered,
+        }),
+        req.body.MessageID,
+      ]
+    );
+    res.send({ Success: true });
+  }
+
+  if (req.body.MessageType == "Meeting") {
+    // Check the user hasn't already answered the question
+    const [MessageData] = await pool.query(
+      "SELECT MessageInteractions FROM GroupMessages WHERE UniqueID = ?",
+      [req.body.MessageID]
+    );
+    if (typeof MessageData[0].PositiveInteraction == "undefined") {
+      MessageData[0].PositiveInteraction = [];
+    }
+    if (typeof MessageData[0].NegativeInteraction == "undefined") {
+      MessageData[0].NegativeInteraction = [];
+    }
+    let Answered = MessageData[0].PositiveInteraction;
+    let NegativeAnswered = MessageData[0].NegativeInteraction;
+    if (Answered == null || Answered == "") {
+      Answered = [];
+    }
+    if (NegativeAnswered == null || NegativeAnswered == "") {
+      NegativeAnswered = [];
+    }
+    if (Answered.includes(UserID) || NegativeAnswered.includes(UserID)) {
+      res.send("You have already answered this question");
+      return;
+    }
+    if (req.body.Response == "Accept") {
+      Answered.push(UserID);
+    }
+    if (req.body.Response == "Decline") {
+      NegativeAnswered.push(UserID);
+    }
+    await pool.query(
+      "UPDATE GroupMessages SET MessageInteractions = ? WHERE UniqueID = ?",
+      [
+        JSON.stringify({
+          PositiveInteraction: Answered,
+          NegativeInteraction: NegativeAnswered,
+        }),
+        req.body.MessageID,
+      ]
+    );
+    res.send({ Success: true });
+  }
 });
 
 app.post("/api/User/CreateDirectMessage", async (req, res) => {

@@ -38,6 +38,16 @@
         <button id="MainButton" onclick="SendMessage()">Send</button>
       </div>
     </main>
+    <dialog class="Dialog" id="MessageInteractionError">
+      <h3>Message Interaction Failed</h3>
+      <p id="MessageInteractionErrorMessage"></p>
+      <button
+        class="BlackButton"
+        onclick="document.getElementById('MessageInteractionError').close()"
+      >
+        Close
+      </button>
+    </dialog>
     <script>
       let GroupID = "";
       function GetGroupID() {
@@ -81,7 +91,7 @@
       }
       // Get messages here
       function LoadMessages() {
-        fetch(`/api/User/Group/Messages/${GroupID}`, {
+        fetch(`/api/User/Messages/${GroupID}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -89,6 +99,8 @@
         })
           .then((res) => res.json())
           .then((data) => {
+            // Clear the message wrapper
+            document.getElementById("MessageWrapper").innerHTML = "";
             data.forEach((message) => {
               RenderMessage(message);
             });
@@ -265,21 +277,147 @@
         if (!AltTypes.includes(Message.MessageType)) {
           Message.MessageType = "Normal";
         }
-        console.log(Message.Message);
         let MessageDiv = document.createElement("div");
         MessageDiv.classList.add("Message");
         if (Message.MessageType == "Normal") {
+          MessageDiv.classList.add("Normal");
           MessageDiv.innerHTML = `<p class="Time">${Message.CreatedAt}</p><h3>${Message.Sender}</h3><p>${Message.Message}</p>`;
         }
         if (Message.MessageType == "Question") {
-          MessageDiv.innerHTML = `<p class="Time">${Message.CreatedAt}</p><h3>${Message.Sender}</h3><p>${Message.Message}</p><form><input type="text" placeholder="Answer..." class="Input"><button class="BlackButton">Send</button></form>`;
+          MessageDiv.classList.add("Question");
+          let TableDiv;
+          console.log(Message.MessageInteractions);
+          MessageDiv.innerHTML = `<p class="Time">${Message.CreatedAt}</p><h3>${Message.Sender}</h3><p>${Message.Message}</p><input type="text" placeholder="Answer..." class="InputWide" id="${Message.UniqueID}Input"><button onclick="SubmitAnswer('${Message.UniqueID}')" class="BlackButton">Send</button><button class="BlackButton" id="${Message.UniqueID}AnswerButton" onclick="RevealAnswers('${Message.UniqueID}')"  title="View Answers">${Message.MessageInteractions.length} Answer(s)</button class="BlackBtn">`;
+          TableDiv = document.createElement("div");
+          TableDiv.classList.add("TableDiv");
+          TableDiv.innerHTML = `<table class="AnswerTable hidden" id="${Message.UniqueID}AnswerTable"><tr><th>Sender</th><th>Answer</th></tr></table>`;
+          if (Message.MessageInteractions.length > 0) {
+            for (let i = 0; i < Message.MessageInteractions.length; i++) {
+              TableDiv.children[0].innerHTML += `<tr><td>${Message.MessageInteractions[i].User}</td><td>${Message.MessageInteractions[i].Answer}</td></tr>`;
+            }
+          }
+          MessageDiv.appendChild(TableDiv);
         }
         if (Message.MessageType == "Information") {
-          MessageDiv.innerHTML = `<p class="Time">${Message.CreatedAt}</p><h3>${Message.Sender}</h3><p>${Message.Message}</p><button>Aknowledge</button>`;
+          MessageDiv.classList.add("Information");
+          MessageDiv.innerHTML = `<p class="Time">${Message.CreatedAt}</p><h3>${Message.Sender}</h3><p>${Message.Message}</p><button class="BlackButton" onclick="AknowledgeInformation('${Message.UniqueID}')">Aknowledge</button><p>${Message.MessageInteractions.length} Aknowledgment(s)</p>`;
+        }
+        if (Message.MessageType == "Meeting") {
+          MessageDiv.classList.add("Meeting");
+          MessageDiv.innerHTML = `<p class="Time">${Message.CreatedAt}</p><h3>${Message.Sender}</h3><p>${Message.Message}</p><button class="BlackButton" onclick="AcceptMeeting('${Message.UniqueID}')">Accept</button><button class="RedButton" onclick="DeclineMeeting('${Message.UniqueID}')">Decline</button>`;
         }
         document.getElementById("MessageWrapper").appendChild(MessageDiv);
         const div = document.getElementById("MessageWrapper");
         div.scrollTo({ top: div.scrollHeight });
+      }
+      function SubmitAnswer(MessageID) {
+        const Answer = document.getElementById(`${MessageID}Input`).value;
+        const Body = {
+          MessageID: MessageID,
+          Answer: Answer,
+          MessageType: "Question",
+        };
+        fetch("/api/User/MessageInteraction", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(Body),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.Success) {
+              document.getElementById(`${MessageID}Input`).value = "";
+              document.getElementById(
+                `${MessageID}AnswerTable`
+              ).innerHTML += `<tr><td>${
+                document.getElementById("AccountName").innerHTML
+              }</td><td>${Answer}</td></tr>`;
+
+              document.getElementById(
+                `${MessageID}AnswerButton`
+              ).innerHTML = `${
+                document.getElementById(`${MessageID}AnswerTable`).children[0]
+                  .children.length
+              } Answer(s)`;
+              // Eventually make this change the class of the message div and add some animations
+
+              // LoadMessages();
+            } else {
+              document.getElementById(
+                "MessageInteractionErrorMessage"
+              ).innerHTML = data.Message;
+              document.getElementById("MessageInteractionError").showModal();
+            }
+          });
+      }
+      function AknowledgeInformation(MessageID) {
+        const Body = {
+          MessageID: MessageID,
+          MessageType: "Information",
+        };
+        fetch("/api/User/MessageInteraction", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(Body),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            // Eventually make this change the class of the message div and add some animations
+          });
+      }
+      function AcceptMeeting(MessageID) {
+        const Body = {
+          MessageID: MessageID,
+          MessageType: "Meeting",
+          Response: "Accept",
+        };
+        fetch("/api/User/MessageInteraction", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(Body),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            // Eventually make this change the class of the message div and add some animations
+          });
+      }
+      function DeclineMeeting(MessageID) {
+        const Body = {
+          MessageID: MessageID,
+          MessageType: "Meeting",
+          Response: "Decline",
+        };
+        fetch("/api/User/MessageInteraction", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(Body),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            // Eventually make this change the class of the message div and add some animations
+          });
+      }
+      function RevealAnswers(UniqueID) {
+        const Table = document.getElementById(`${UniqueID}AnswerTable`);
+        if (Table.classList.contains("hidden")) {
+          Table.classList.remove("hidden");
+          document.getElementById(`${UniqueID}AnswerButton`).innerHTML =
+            "Hide Answers";
+        } else {
+          Table.classList.add("hidden");
+          // find the number of answers
+          const Answers = document.getElementById(`${UniqueID}AnswerTable`)
+            .children[0].children.length;
+          document.getElementById(`${UniqueID}AnswerButton`).innerHTML =
+            Answers + " Answer(s)";
+        }
       }
     </script>
   </body>
