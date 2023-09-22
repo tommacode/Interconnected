@@ -116,10 +116,7 @@ async function FindAccountType(Cookies) {
 }
 
 function PresenceCheck(Variable) {
-  if (Variable == undefined || Variable == null || Variable == "") {
-    return false;
-  }
-  return true;
+  return Variable == undefined || Variable == null || Variable == "";
 }
 
 app.get("/", async (req, res) => {
@@ -164,7 +161,6 @@ app.get("/", async (req, res) => {
   }
   if (AccountType == "User") {
     res.render(__dirname + "/Pages/EJS/User/UserHome.ejs");
-    return;
   }
 });
 
@@ -298,7 +294,6 @@ app.post("/api/Login", async (req, res) => {
   );
   res.cookie("session_id", SessionID);
   res.send({ success: true });
-  return;
 });
 
 app.get("/CSS/:File", async (req, res) => {
@@ -357,35 +352,26 @@ app.get("/api/Admin/Groups", async (req, res) => {
     [ParentID]
   );
   console.log(Groups);
-  for (let i = 0; i < Groups.length; i++) {
-    if (
-      Groups[i].Members == null ||
-      Groups[i].Members == "" ||
-      Groups[i].Members == []
-    ) {
-      Groups[i].Members = [];
+  for (const Group of Groups) {
+    if (Group.Members == null || Group.Members == "" || Group.Members == []) {
+      Group.Members = [];
     }
-    for (let j = 0; j < Groups[i].Members.length; j++) {
+    for (let j = 0; j < Group.Members.length; j++) {
       const [MemberData] = await pool.query(
         "SELECT Firstname,Surname FROM UserAccounts WHERE ID = ?",
-        [Groups[i].Members[j]]
+        [Group.Members[j]]
       );
-      Groups[i].Members[j] =
-        MemberData[0].Firstname + " " + MemberData[0].Surname;
+      Group.Members[j] = MemberData[0].Firstname + " " + MemberData[0].Surname;
     }
-    if (
-      Groups[i].Admins == null ||
-      Groups[i].Admins == "" ||
-      Groups[i].Admins == []
-    ) {
-      Groups[i].Admins = [];
+    if (Group.Admins == null || Group.Admins == "" || Group.Admins == []) {
+      Group.Admins = [];
     }
-    for (let j = 0; j < Groups[i].Admins.length; j++) {
+    for (let j = 0; j < Group.Admins.length; j++) {
       const [AdminData] = await pool.query(
         "SELECT Name FROM UserAccounts WHERE ID = ?",
         [Groups[i].Admins[j]]
       );
-      Groups[i].Admins[j] = AdminData[0].Name;
+      Group.Admins[j] = AdminData[0].Name;
     }
   }
   res.send(Groups);
@@ -424,7 +410,6 @@ app.get("/api/Me", async (req, res) => {
       [UserID]
     );
     res.send(Account[0]);
-    return;
   }
 });
 
@@ -488,8 +473,8 @@ app.post("/api/Admin/CreateMultipleUsers", async (req, res) => {
   //Remove the first line
   CSV.shift();
   //Create the users
-  for (let i = 0; i < CSV.length; i++) {
-    CurrentLine = CSV[i].split(",");
+  for (line of CSV) {
+    CurrentLine = line.split(",");
     if (CurrentLine.length != 4) {
       console.log(
         "Invalid CSV format. Please refer to the example CSV file or contact support"
@@ -625,26 +610,21 @@ app.put("/api/Me", async (req, res) => {
       "SELECT AdminID FROM AdminAccountSessions WHERE SessionID = ?",
       [req.cookies.session_id]
     );
-    const [AccountData] = await pool.query(
-      "SELECT * FROM AdminAccounts WHERE ID = ?",
-      [AdminID[0].AdminID]
-    );
-    for (let i = 0; i < AllowedFields.length; i++) {
-      if (req.body[AllowedFields[i]] != undefined) {
-        if (AllowedFields[i] == "Password") {
-          req.body[AllowedFields[i]] = crypto
+    for (field of AllowedFields) {
+      if (req.body[field] != undefined) {
+        if (field == "Password") {
+          req.body[field] = crypto
             .createHash("sha256")
-            .update(req.body[AllowedFields[i]])
+            .update(req.body[field])
             .digest("hex");
         }
         await pool.query(
-          "UPDATE AdminAccounts SET " + AllowedFields[i] + " = ? WHERE ID = ?",
-          [req.body[AllowedFields[i]], AdminID[0].AdminID]
+          "UPDATE AdminAccounts SET " + field + " = ? WHERE ID = ?",
+          [req.body[field], AdminID[0].AdminID]
         );
       }
     }
     res.sendStatus(200);
-    return;
   }
 });
 
@@ -696,6 +676,7 @@ app.get("/api/User/Groups", async (req, res) => {
       i--;
     }
   }
+  let CurrentUserIndex;
   if (Type == 1) {
     for (let i = 0; i < Groups.length; i++) {
       CurrentUserIndex = Groups[i].Members.indexOf(UserID);
@@ -838,15 +819,15 @@ app.get("/api/User/Messages/:GroupID", async (req, res) => {
   );
   // Reverse the array so the newest messages are at the bottom
   Messages.reverse();
-  for (let i = 0; i < Messages.length; i++) {
+  for (message of Messages) {
     const [SenderData] = await pool.query(
       "SELECT Firstname,Surname FROM UserAccounts WHERE ID = ?",
-      [Messages[i].SenderID]
+      [message.SenderID]
     );
     // Remove sender ID from the message object
-    delete Messages[i].SenderID;
-    Messages[i].Sender = SenderData[0].Firstname + " " + SenderData[0].Surname;
-    Messages[i].CreatedAt = Messages[i].CreatedAt.toLocaleString("en-GB", {
+    delete message.SenderID;
+    message.Sender = SenderData[0].Firstname + " " + SenderData[0].Surname;
+    message.CreatedAt = message.CreatedAt.toLocaleString("en-GB", {
       year: "numeric",
       month: "numeric",
       day: "numeric",
@@ -858,16 +839,16 @@ app.get("/api/User/Messages/:GroupID", async (req, res) => {
     // #####
     // Question
     // #####
-    if (Messages[i].MessageType == "Question") {
+    if (message.MessageType == "Question") {
       try {
-        for (ii = 0; ii < Messages[i].MessageInteractions.length; ii++) {
+        for (let ii = 0; ii < message.MessageInteractions.length; ii++) {
           let [Username] = await pool.query(
             "SELECT Firstname,Surname FROM UserAccounts WHERE ID = ?",
-            [Messages[i].MessageInteractions[ii].UserID]
+            [message.MessageInteractions[ii].UserID]
           );
-          Messages[i].MessageInteractions[ii].User =
+          message.MessageInteractions[ii].User =
             Username[0].Firstname + " " + Username[0].Surname;
-          delete Messages[i].MessageInteractions[ii].UserID;
+          delete message.MessageInteractions[ii].UserID;
         }
       } catch (e) {
         console.log(e);
@@ -913,7 +894,7 @@ app.get("/api/User/SearchUsers/:Search", async (req, res) => {
     "SELECT Firstname,Surname FROM UserAccounts WHERE ParentID = ? AND CONCAT(Firstname, ' ', Surname) LIKE ? LIMIT 10",
     [ParentID, "%" + req.params.Search + "%"]
   );
-  for (i = 0; i < Users.length; i++) {
+  for (let i = 0; i < Users.length; i++) {
     Users[i] = Users[i].Firstname + " " + Users[i].Surname;
   }
   res.send(Users);
@@ -990,7 +971,7 @@ app.post("/api/User/SendMessage", async (req, res) => {
       "SELECT Firstname,Surname FROM UserAccounts WHERE ID = ?",
       [UserID]
     );
-    CurrentTime = new Date();
+    let CurrentTime = new Date();
 
     Message = {
       Sender: SenderData[0].Firstname + " " + SenderData[0].Surname,
@@ -1005,7 +986,7 @@ app.post("/api/User/SendMessage", async (req, res) => {
       MessageType: 1,
       UniqueID: MessageID,
       MessageData: req.body.MessageOptions,
-      MessageType: MessageType,
+      MessageType,
       MessageInteractions: [],
     };
   }
