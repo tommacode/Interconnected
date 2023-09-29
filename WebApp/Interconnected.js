@@ -814,7 +814,7 @@ app.get("/api/User/Messages/:GroupID", async (req, res) => {
     return;
   }
   const [Messages] = await pool.query(
-    "SELECT SenderID,Message,CreatedAt,MessageType,UniqueID,MessageInteractions FROM GroupMessages WHERE GroupID = ? AND Deleted = 0 ORDER BY ID DESC LIMIT 10",
+    "SELECT SenderID,Message,CreatedAt,MessageType,UniqueID,MessageInteractions,ReplyingTo FROM GroupMessages WHERE GroupID = ? AND Deleted = 0 ORDER BY ID DESC LIMIT 10",
     [GroupData[0].ID]
   );
   // Reverse the array so the newest messages are at the bottom
@@ -853,6 +853,14 @@ app.get("/api/User/Messages/:GroupID", async (req, res) => {
       } catch (e) {
         console.log(e);
       }
+    }
+
+    if (message.ReplyingTo != 0) {
+      let [UniqueID] = await pool.query(
+        "SELECT UniqueID FROM GroupMessages WHERE ID = ?",
+        [message.ReplyingTo]
+      );
+      message.ReplyingTo = UniqueID[0].UniqueID;
     }
   }
   res.send(Messages);
@@ -911,6 +919,9 @@ app.post("/api/User/SendMessage", async (req, res) => {
     res.send("Invalid message");
     return;
   }
+  if (PresenceCheck(req.body.MessageType)) {
+    req.body.MessageType = "Normal";
+  }
   let UserID = await pool.query(
     "SELECT UserID FROM UserAccountSessions WHERE SessionID = ?",
     [req.cookies.session_id]
@@ -941,6 +952,7 @@ app.post("/api/User/SendMessage", async (req, res) => {
   }
   // Create a uniqueID
   const MessageID = crypto.randomBytes(6).toString("hex");
+  console.log(req.body.MessageID);
   let MessageType = "1";
   if (
     req.body.MessageType != undefined ||
@@ -949,9 +961,23 @@ app.post("/api/User/SendMessage", async (req, res) => {
   ) {
     MessageType = req.body.MessageType;
   }
+  let replyingTo = req.body.ReplyingTo;
+  if (replyingTo == undefined || replyingTo == null || replyingTo == "") {
+    replyingTo = 0;
+  } else {
+    [replyingTo] = await pool.query(
+      "SELECT ID FROM GroupMessages WHERE UniqueID = ?",
+      [replyingTo]
+    );
+    if (replyingTo.length == 0) {
+      replyingTo = 0;
+    } else {
+      replyingTo = replyingTo[0].ID;
+    }
+  }
   // TODO: Add a check to make sure if the messagetype is different that the group type is a group
   await pool.query(
-    "INSERT INTO GroupMessages (SenderID, GroupID, Message, MessageType, UniqueID, MessageData, MessageInteractions) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO GroupMessages (SenderID, GroupID, Message, MessageType, UniqueID, MessageData, MessageInteractions, ReplyingTo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     [
       UserID,
       GroupData[0].ID,
@@ -960,6 +986,7 @@ app.post("/api/User/SendMessage", async (req, res) => {
       MessageID,
       JSON.stringify(req.body.MessageOptions),
       "[]",
+      replyingTo,
     ]
   );
   res.send({ Success: true });
@@ -983,10 +1010,9 @@ app.post("/api/User/SendMessage", async (req, res) => {
         hour: "numeric",
         minute: "numeric",
       }),
-      MessageType: 1,
       UniqueID: MessageID,
       MessageData: req.body.MessageOptions,
-      MessageType,
+      MessageType: MessageType,
       MessageInteractions: [],
     };
   }

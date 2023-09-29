@@ -76,9 +76,7 @@ app.post("/api/SignUp", async (req, res) => {
   );
   //Create a session
   //create a random string
-  const SessionID =
-    Math.random().toString(36).substring(2, 15) +
-    Math.random().toString(36).substring(2, 15);
+  const SessionID = crypto.randomBytes(32).toString("hex");
   //Get the user id
   const [User2] = await pool.query(
     "SELECT * FROM AdminAccounts WHERE Email = ?",

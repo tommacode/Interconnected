@@ -418,8 +418,6 @@ function buzzword() {
   adverbs = randomarray(adverbs);
   verbs = randomarray(verbs);
 
-  let x;
-
   let statement = adverbs[adverbs.length - 1];
   adverbs.length -= 1;
   statement = statement + " " + verbs[verbs.length - 1];

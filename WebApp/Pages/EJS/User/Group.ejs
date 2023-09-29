@@ -306,6 +306,10 @@
           MessageDiv.classList.add("Meeting");
           MessageDiv.innerHTML = `<p class="Time">${Message.CreatedAt}</p><h3>${Message.Sender}</h3><p>${Message.Message}</p><button class="BlackButton" onclick="AcceptMeeting('${Message.UniqueID}')">Accept</button><button class="RedButton" onclick="DeclineMeeting('${Message.UniqueID}')">Decline</button>`;
         }
+        if (Message.MessageType == "Reply") {
+          MessageDiv.classList.add("Reply");
+          MessageDiv.innerHTML = `<p class="Time">${Message.CreatedAt}</p><h3>${Message.Sender}</h3><p>${Message.Message}</p>`;
+        }
         document.getElementById("MessageWrapper").appendChild(MessageDiv);
         const div = document.getElementById("MessageWrapper");
         div.scrollTo({ top: div.scrollHeight });
@@ -313,11 +317,12 @@
       function SubmitAnswer(MessageID) {
         const Answer = document.getElementById(`${MessageID}Input`).value;
         const Body = {
-          MessageID: MessageID,
-          Answer: Answer,
-          MessageType: "Question",
+          ReplyingTo: MessageID,
+          Message: Answer,
+          GroupID: GroupID,
+          MessageType: "Reply",
         };
-        fetch("/api/User/MessageInteraction", {
+        fetch("/api/User/SendMessage", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
