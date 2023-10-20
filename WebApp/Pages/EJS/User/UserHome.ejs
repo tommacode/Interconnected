@@ -43,7 +43,7 @@
             TextWrapper.style = "float: right";
             var NotificationCount = document.createElement("p");
             NotificationCount.className = "NotificationCount";
-            NotificationCount.innerHTML = "0 New Messages";
+            NotificationCount.innerHTML = `${data[i].UnreadMessages} New Messages`;
             var GroupName = document.createElement("h3");
             GroupName.innerHTML = data[i].Name;
             var GroupImage = document.createElement("img");

@@ -114,7 +114,7 @@
               if (group.UniqueID === GroupID)
                 Group.classList.add("ActiveGroup");
               Group.id = group.UniqueID;
-              Group.innerHTML = `<h3>${group.Name}</h3>`;
+              Group.innerHTML = `<p style="float: right; margin-right: 25px; background-color: #e0e0e0; padding: 5px; border-radius: 8px">${group.UnreadMessages}</p><h3>${group.Name}</h3>`;
               Group.addEventListener("click", () => {
                 ChangeGroup(group.UniqueID);
               });
@@ -124,7 +124,7 @@
       }
       // Get messages here
       function LoadMessages() {
-        fetch(`/api/User/Group/Messages/${GroupID}`, {
+        fetch(`/api/User/Messages/${GroupID}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

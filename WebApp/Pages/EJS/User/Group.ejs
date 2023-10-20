@@ -102,7 +102,12 @@
             // Clear the message wrapper
             document.getElementById("MessageWrapper").innerHTML = "";
             data.forEach((message) => {
-              RenderMessage(message);
+              try {
+                RenderMessage(message);
+              } catch (error) {
+                console.log(message);
+                console.log("Caused an error: " + error);
+              }
             });
           });
       }
@@ -273,18 +278,57 @@
           .classList.remove("hidden");
       });
       function RenderMessage(Message) {
-        const AltTypes = ["Question", "Information", "Meeting"];
+        const AltTypes = ["Question", "Information", "Meeting", "Reply"];
         if (!AltTypes.includes(Message.MessageType)) {
           Message.MessageType = "Normal";
         }
         let MessageDiv = document.createElement("div");
+        MessageDiv.id = Message.UniqueID;
         MessageDiv.classList.add("Message");
+        if (Message.MessageType == "Reply") {
+          // Finds message that is being replied to and works out how
+          // add the reply correctly for the message type
+          const ClassList = document.getElementById(
+            Message.ReplyingTo
+          ).classList;
+          if (ClassList.length > 1) {
+            // This is a special message type
+            MessageType = ClassList[1];
+          } else {
+            MessageType = "Normal";
+          }
+          if (MessageType == "Question") {
+            document.querySelector(
+              `#${Message.ReplyingTo}AnswerTable`
+            ).innerHTML += `<tr><td>${Message.Sender}</td><td>${Message.Message}</td></tr>`;
+            // Update the number of answers
+            document.getElementById(
+              `${Message.ReplyingTo}AnswerButton`
+            ).innerHTML = `${
+              document.getElementById(`${Message.ReplyingTo}AnswerTable`)
+                .children[0].children.length
+            } Answer(s)`;
+          }
+          if (MessageType == "Information") {
+            let CountAknowledgements = document
+              .getElementById(`${Message.ReplyingTo}MessageAknowledgements`)
+              .innerHTML.split(" ")[0];
+            CountAknowledgements = parseInt(CountAknowledgements);
+            document.getElementById(
+              `${Message.ReplyingTo}MessageAknowledgements`
+            ).innerHTML = `${CountAknowledgements + 1} Aknowledgment(s)`;
+            // TODO: Make the plural version of aknowledge dynamic
+            // TODO: Create a way to view who has aknowledged the message
+            return;
+          }
+        }
         if (Message.MessageType == "Normal") {
           MessageDiv.classList.add("Normal");
           MessageDiv.innerHTML = `<p class="Time">${Message.CreatedAt}</p><h3>${Message.Sender}</h3><p>${Message.Message}</p>`;
         }
         if (Message.MessageType == "Question") {
           MessageDiv.classList.add("Question");
+
           let TableDiv;
           console.log(Message.MessageInteractions);
           MessageDiv.innerHTML = `<p class="Time">${Message.CreatedAt}</p><h3>${Message.Sender}</h3><p>${Message.Message}</p><input type="text" placeholder="Answer..." class="InputWide" id="${Message.UniqueID}Input"><button onclick="SubmitAnswer('${Message.UniqueID}')" class="BlackButton">Send</button><button class="BlackButton" id="${Message.UniqueID}AnswerButton" onclick="RevealAnswers('${Message.UniqueID}')"  title="View Answers">${Message.MessageInteractions.length} Answer(s)</button class="BlackBtn">`;
@@ -300,7 +344,7 @@
         }
         if (Message.MessageType == "Information") {
           MessageDiv.classList.add("Information");
-          MessageDiv.innerHTML = `<p class="Time">${Message.CreatedAt}</p><h3>${Message.Sender}</h3><p>${Message.Message}</p><button class="BlackButton" onclick="AknowledgeInformation('${Message.UniqueID}')">Aknowledge</button><p>${Message.MessageInteractions.length} Aknowledgment(s)</p>`;
+          MessageDiv.innerHTML = `<p class="Time">${Message.CreatedAt}</p><h3>${Message.Sender}</h3><p>${Message.Message}</p><button class="BlackButton" onclick="AknowledgeInformation('${Message.UniqueID}')">Aknowledge</button><p id="${Message.UniqueID}MessageAknowledgements">${Message.MessageInteractions.length} Aknowledgment(s)</p>`;
         }
         if (Message.MessageType == "Meeting") {
           MessageDiv.classList.add("Meeting");
@@ -358,10 +402,12 @@
       }
       function AknowledgeInformation(MessageID) {
         const Body = {
-          MessageID: MessageID,
-          MessageType: "Information",
+          ReplyingTo: MessageID,
+          MessageType: "Reply",
+          Message: "Ack",
+          GroupID: GroupID,
         };
-        fetch("/api/User/MessageInteraction", {
+        fetch("/api/User/SendMessage", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

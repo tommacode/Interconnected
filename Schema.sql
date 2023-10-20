@@ -89,3 +89,10 @@ Create Table GroupMessages(
     ReplyingTo int NOT NULL DEFAULT 0
 );
 
+Create Table UnreadMessages(
+    ID int NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    UserID int NOT NULL,
+    GroupID int NOT NULL,
+    LastViewed int NOT NULL DEFAULT 0
+);
+
