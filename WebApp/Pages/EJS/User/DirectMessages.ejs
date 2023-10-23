@@ -114,7 +114,7 @@
               if (group.UniqueID === GroupID)
                 Group.classList.add("ActiveGroup");
               Group.id = group.UniqueID;
-              Group.innerHTML = `<p style="float: right; margin-right: 25px; background-color: #e0e0e0; padding: 5px; border-radius: 8px">${group.UnreadMessages}</p><h3>${group.Name}</h3>`;
+              Group.innerHTML = `<p style="float: right; margin-right: 25px; background-color: #e0e0e0; padding: 5px; border-radius: 8px">${group.UnreadMessages}</p><h3>${group.Name}</h3><p style="font-size: 0.875rem;" class="LastMessage">${group.LastMessage}</p>`;
               Group.addEventListener("click", () => {
                 ChangeGroup(group.UniqueID);
               });
@@ -201,6 +201,33 @@
           Message.innerHTML = `<p class="Time">${data.CreatedAt}</p><h3>${data.Sender}</h3><p>${data.Message}</p>`;
           document.getElementById("MessageWrapper").appendChild(Message);
           const div = document.getElementById("MessageWrapper");
+          if (localStorage.getItem("Fullname") === null) {
+            // Use the /api/Me api to get the fullname and store in localstorage
+            fetch("/api/Me", {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                localStorage.setItem(
+                  "Fullname",
+                  data.Firstname + " " + data.Surname
+                );
+              });
+          }
+          if (data.Sender === localStorage.getItem("Fullname")) {
+            Message.classList.add("SentMessage");
+            data.PerspectiveSender = "You";
+          } else {
+            Message.classList.add("ReceivedMessage");
+            data.PerspectiveSender = data.Sender;
+          }
+          GroupDiv = document.getElementById(GroupID);
+          GroupDiv.getElementsByClassName(`LastMessage`)[0].innerHTML =
+            data.PerspectiveSender + ": " + data.Message;
+
           div.scrollTo({ top: div.scrollHeight });
           if (SendNotifications) {
             // Check that the sender is not the current user

@@ -719,6 +719,32 @@ app.get("/api/User/Groups", async (req, res) => {
       );
       Groups[i].Name =
         OtherUserData[0].Firstname + " " + OtherUserData[0].Surname;
+
+      let GroupID = await pool.query(
+        "SELECT ID FROM `Groups` WHERE UniqueID = ?",
+        [Groups[i].UniqueID]
+      );
+      GroupID = GroupID[0][0].ID;
+      let [LastMessage] = await pool.query(
+        "SELECT * FROM GroupMessages WHERE GroupID = ? ORDER BY ID DESC LIMIT 1",
+        [GroupID]
+      );
+      console.log(Groups[i].UniqueID);
+      if (LastMessage.length == 0) {
+        Groups[i].LastMessage = "";
+      } else {
+        let Sender;
+        if (LastMessage[0].SenderID == UserID) {
+          Sender = "You";
+        } else {
+          Sender = await pool.query(
+            "SELECT Firstname,Surname FROM UserAccounts WHERE ID = ?",
+            [LastMessage[0].SenderID]
+          );
+          Sender = Sender[0][0].Firstname + " " + Sender[0][0].Surname;
+        }
+        Groups[i].LastMessage = `${Sender}: ${LastMessage[0].Message}`;
+      }
     }
   }
 
@@ -1018,10 +1044,10 @@ app.post("/api/User/SendMessage", async (req, res) => {
       "SELECT MessageType FROM GroupMessages WHERE ID = ?",
       [req.body.ReplyingToID]
     );
-    if (MessageType[0].MessageType != "Normal") {
-      console.log(
-        `SELECT count(*) FROM GroupMessages WHERE ReplyingTo = ${req.body.ReplyingTo} AND SenderID = ${UserID}`
-      );
+    if (
+      MessageType[0].MessageType != "Normal" &&
+      MessageType[0].MessageType != "Question"
+    ) {
       let [Replies] = await pool.query(
         "SELECT count(*) FROM GroupMessages WHERE ReplyingTo = ? AND SenderID = ?",
         [req.body.ReplyingToID, UserID]

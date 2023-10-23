@@ -298,16 +298,17 @@
             MessageType = "Normal";
           }
           if (MessageType == "Question") {
-            document.querySelector(
-              `#${Message.ReplyingTo}AnswerTable`
+            document.getElementById(
+              `${Message.ReplyingTo}AnswerTable`
             ).innerHTML += `<tr><td>${Message.Sender}</td><td>${Message.Message}</td></tr>`;
             // Update the number of answers
             document.getElementById(
               `${Message.ReplyingTo}AnswerButton`
             ).innerHTML = `${
               document.getElementById(`${Message.ReplyingTo}AnswerTable`)
-                .children[0].children.length
+                .children.length - 1
             } Answer(s)`;
+            return;
           }
           if (MessageType == "Information") {
             let CountAknowledgements = document
@@ -377,18 +378,18 @@
           .then((data) => {
             if (data.Success) {
               document.getElementById(`${MessageID}Input`).value = "";
-              document.getElementById(
-                `${MessageID}AnswerTable`
-              ).innerHTML += `<tr><td>${
-                document.getElementById("AccountName").innerHTML
-              }</td><td>${Answer}</td></tr>`;
+              // document.getElementById(
+              //   `${MessageID}AnswerTable`
+              // ).innerHTML += `<tr><td>${
+              //   document.getElementById("AccountName").innerHTML
+              // }</td><td>${Answer}</td></tr>`;
 
-              document.getElementById(
-                `${MessageID}AnswerButton`
-              ).innerHTML = `${
-                document.getElementById(`${MessageID}AnswerTable`).children[0]
-                  .children.length
-              } Answer(s)`;
+              // document.getElementById(
+              //   `${MessageID}AnswerButton`
+              // ).innerHTML = `${
+              //   document.getElementById(`${MessageID}AnswerTable`).children[0]
+              //     .children.length
+              // } Answer(s)`;
               // Eventually make this change the class of the message div and add some animations
 
               // LoadMessages();
@@ -421,11 +422,12 @@
       }
       function AcceptMeeting(MessageID) {
         const Body = {
-          MessageID: MessageID,
-          MessageType: "Meeting",
-          Response: "Accept",
+          ReplyingTo: MessageID,
+          MessageType: "Reply",
+          Message: "AcceptMeeting",
+          GroupID: GroupID,
         };
-        fetch("/api/User/MessageInteraction", {
+        fetch("/api/User/SendMessage", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -439,11 +441,12 @@
       }
       function DeclineMeeting(MessageID) {
         const Body = {
-          MessageID: MessageID,
-          MessageType: "Meeting",
-          Response: "Decline",
+          ReplyingTo: MessageID,
+          MessageType: "Reply",
+          Message: "DeclineMeeting",
+          GroupID: GroupID,
         };
-        fetch("/api/User/MessageInteraction", {
+        fetch("/api/User/SendMessage", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
